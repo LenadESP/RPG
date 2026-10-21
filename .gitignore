@@ -1,6 +1,7 @@
 #My own shit
 .vscode
 .obsidian
+/build
 # Prerequisites
 *.d
 
