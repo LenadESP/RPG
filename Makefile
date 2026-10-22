@@ -1,10 +1,14 @@
 # ─────────────────────────────────────────────────────────────
 #  RPG — build system
-#  make          -> native linux debug build  (build/game)
-#  make run      -> build + launch it
-#  make win      -> 64-bit windows .exe       (build/game.exe)
-#  make RELEASE=1 win  -> optimised, no console window
-#  make clean    -> nuke build/
+#  make                 -> native linux debug build  (build/game)
+#  make run             -> build + launch it
+#  make win             -> 64-bit windows .exe       (build/game.exe)
+#  make RELEASE=1 win   -> optimised, no console window
+#  make clean           -> nuke build/
+#
+#  if raylib is not in /usr/local (e.g. on the school laptop, installed
+#  into $HOME/.local without root), pass PREFIX:
+#      make PREFIX=$HOME/.local
 # ─────────────────────────────────────────────────────────────
 
 NAME    := game
@@ -16,6 +20,10 @@ BIN_DIR := build
 #   lib/raylib-win/include/raylib.h
 #   lib/raylib-win/lib/libraylib.a
 RAYLIB_WIN := lib/raylib-win
+
+# where raylib lives on this machine. ?= means "use this unless
+# something else (the command line, the environment) already set it"
+PREFIX ?= /usr/local
 
 SRCS    := $(wildcard $(SRC_DIR)/*.c)
 OBJ_LIN := $(patsubst $(SRC_DIR)/%.c,$(BIN_DIR)/linux/%.o,$(SRCS))
@@ -32,12 +40,13 @@ else
 	CFLAGS      += -g -O0
 endif
 
-# raylib iturburutik konpilatuta dago (/usr/local), estatikoa.
-# -L/usr/local/lib: Ubunturen gcc-k ez du beti lehenetsita begiratzen.
-# -lX11: beharrezkoa raylib estatikoarekin lotzean.
+# raylib is built from source as a static lib.
+# -L$(PREFIX)/lib: gcc does not always look there by default.
+# -lX11 and friends: needed when linking against static raylib.
 CC_LIN  := gcc
-CF_LIN  := -I/usr/local/include
-LIB_LIN := -L/usr/local/lib -lraylib -lm -ldl -lpthread -lX11
+CF_LIN  := -I$(PREFIX)/include
+LIB_LIN := -L$(PREFIX)/lib -lraylib -lm -ldl -lpthread \
+           -lX11 -lXrandr -lXinerama -lXcursor -lXi
 
 CC_WIN  := x86_64-w64-mingw32-gcc
 CF_WIN  := -I$(RAYLIB_WIN)/include

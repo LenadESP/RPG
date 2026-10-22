@@ -1,7 +1,7 @@
 #ifndef INPUT_H 
 #define INPUT_H
 
-#include "stdbool.h"
+#include <stdbool.h>
 
 typedef struct InputState {
     bool up;
@@ -9,5 +9,7 @@ typedef struct InputState {
     bool left;
     bool right;
 } InputState;
+
+void input_poll(InputState *in);
 
 #endif // INPUT_H
