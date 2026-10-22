@@ -14,4 +14,7 @@ typedef struct Entity {
     bool active;
 } Entity;
 
+void entity_update(Entity *p, float dx, float dy, float dt);
+void entity_draw(const Entity *p);
+
 #endif

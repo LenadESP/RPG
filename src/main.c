@@ -1,11 +1,14 @@
 #include "input.h"
 #include "entity.h"
+#include "entity.c"
 #include "player.c"
+#include "player.h"
 #include "raylib.h"
+
 #include <stdio.h>
 #include <stdbool.h>
 
-//Defining basic metrics for the game
+//Defining basic variables for the game.
 #define TICK_RATE 60
 #define FRAME_RATE 60
 #define MAX_FRAMETIME 0.25
@@ -14,6 +17,7 @@ static void toggle_fullscreen(void);
 
 int main(void) {
     InputState input = {0};
+    Entity player = player_init();
 
     //Accumulator
     double accumulator = 0.0;
@@ -43,13 +47,20 @@ int main(void) {
 
         //Input logic using accumulator
         input_poll(&input);
+
         while (accumulator >= TICK_DURATION) {
-            player_update(&player, input);
+            player_update(&player, input, TICK_DURATION);
             accumulator -= TICK_DURATION;
         }
+
+        //DRAWING LOGIC
+        //Careful with the order: It's layered
+
         BeginDrawing();
+
         ClearBackground(BLACK);
-        player_draw(&player);
+        entity_draw(&player);
+
         EndDrawing();
     }
     CloseWindow();
