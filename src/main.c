@@ -36,6 +36,14 @@ int main(void) {
     //Set the initial screen state to be the menu
     ScreenState screen = SCREEN_MENU;
 
+    //placeholder test collision box
+    entities[1] = (Entity){
+        .x = 500,
+        .y = 500,
+        .size = 30,
+        .active = true
+    };
+
     //Accumulator
     double accumulator = 0.0;
     double lastTime = 0.0;
