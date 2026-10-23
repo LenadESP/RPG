@@ -12,9 +12,10 @@ typedef struct Entity {
     float max_health;
     int texture_id;
     bool active;
+    bool solid;
 } Entity;
 
-void entity_update(Entity *p, float dx, float dy, float dt);
+void entity_update(Entity *p, float dx, float dy, float dt,  Entity *entities, int count);
 void entity_draw(const Entity p);
 
 #endif

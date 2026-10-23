@@ -41,7 +41,8 @@ int main(void) {
         .x = 500,
         .y = 500,
         .size = 30,
-        .active = true
+        .active = true,
+        .solid = true
     };
 
     //Accumulator
@@ -94,7 +95,7 @@ int main(void) {
 
         if(screen == SCREEN_PLAYING){
             while (accumulator >= TICK_DURATION) {
-                player_update(player, player_input, TICK_DURATION);
+                player_update(player, player_input, TICK_DURATION, entities, MAX_ENTITIES);
                 accumulator -= TICK_DURATION;
             }
         }

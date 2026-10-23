@@ -20,13 +20,14 @@ Entity player_init(void){
         .vel = VEL,
         .health = START_HEALTH,
         .max_health = MAX_HEALTH,
-        .active = true
+        .active = true,
+        .solid = true
     };
 
     return player;
 }
 
-void player_update (Entity *p, PlayerInput i, float tick_duration){
+void player_update (Entity *p, PlayerInput i, float tick_duration, Entity *entities, int count){
     float dx = 0;
     float dy = 0;
 
@@ -47,8 +48,8 @@ void player_update (Entity *p, PlayerInput i, float tick_duration){
     const float length = sqrtf(dx*dx + dy*dy);
 
     if (length > 0){
-        entity_update(p, dx/length, dy/length, tick_duration);
+        entity_update(p, dx/length, dy/length, tick_duration, entities, count);
     } else {
-        entity_update(p, dx, dy, tick_duration);
+        entity_update(p, dx, dy, tick_duration, entities, count);
     }
 }
