@@ -24,7 +24,7 @@ Entity player_init(void){
     return player;
 }
 
-void player_update (Entity *p, InputState i, double tick_duration){
+void player_update (Entity *p, PlayerInput i, double tick_duration){
     float dx = 0;
     float dy = 0;
 

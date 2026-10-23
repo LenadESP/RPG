@@ -10,6 +10,7 @@
 #define TICK_RATE 60
 #define FRAME_RATE 60
 #define MAX_FRAMETIME 0.25
+#define MAX_ENTITIES 264
 
 static void toggle_fullscreen(void);
 typedef enum {
@@ -21,8 +22,15 @@ typedef enum {
 
 int main(void) {
     //Initialize some variables
-    InputState input = {0};
-    Entity player = player_init();
+    PlayerInput player_input = {0};
+    UIInput ui_input = {0};
+
+    //Define entities array and create player alias
+    Entity entities[MAX_ENTITIES] = {0};
+    entities[0] = player_init();
+    Entity *player = &entities[0];
+
+    //Set the initial screen state to be the menu
     ScreenState screen = SCREEN_MENU;
 
     //Accumulator
@@ -30,6 +38,7 @@ int main(void) {
     double lastTime = 0.0;
     const double TICK_DURATION = 1.0 / TICK_RATE;
 
+    //Start window
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
     InitWindow(1280, 720, "RPG Game!"); //16:9
     SetExitKey(KEY_NULL);
@@ -38,21 +47,24 @@ int main(void) {
     lastTime = GetTime();
 
     while (!WindowShouldClose()) {
-        //fullscreen handler
-        if (IsKeyPressed(KEY_F11)){toggle_fullscreen();}
+        input_poll_user(&player_input);
+        input_poll_ui(&ui_input);
 
-        //Game start
-        if (IsKeyPressed(KEY_ENTER) && screen == SCREEN_MENU){
+        //fullscreen handler
+        if (ui_input.fullscreen){toggle_fullscreen();}
+
+        //Start game
+        if (ui_input.start_game && screen == SCREEN_MENU){
             lastTime = GetTime();
             accumulator = 0;
             screen = SCREEN_PLAYING;
         }
 
         //Game pause
-        if (IsKeyPressed(KEY_ESCAPE) && screen == SCREEN_PLAYING){
+        if (ui_input.pause_game && screen == SCREEN_PLAYING){
             screen = SCREEN_PAUSED;
         
-        } else if (IsKeyPressed(KEY_ESCAPE) && screen == SCREEN_PAUSED){
+        } else if (ui_input.pause_game && screen == SCREEN_PAUSED){
             lastTime = GetTime();
             accumulator = 0;
             screen = SCREEN_PLAYING;
@@ -69,12 +81,9 @@ int main(void) {
         accumulator += delta;
         lastTime = currentTime;
 
-        //Input logic using accumulator
-        input_poll(&input);
-
         if(screen == SCREEN_PLAYING){
             while (accumulator >= TICK_DURATION) {
-                player_update(&player, input, TICK_DURATION);
+                player_update(player, player_input, TICK_DURATION);
                 accumulator -= TICK_DURATION;
             }
         }
@@ -86,18 +95,25 @@ int main(void) {
         ClearBackground(RAYWHITE);
         
         switch (screen) {
-            case SCREEN_MENU:
-                DrawText("Press enter to start!", 500, 500, 15, BLACK);
+            case SCREEN_MENU: {
+                int size = 40;
+                const char *txt = "Press ENTER to start!";
+                DrawText(txt, GetScreenWidth()/2 - MeasureText(txt, size)/2, 500, size, BLACK);
                 break;
+            }
 
-            case SCREEN_PLAYING:
-                entity_draw(player);
+            case SCREEN_PLAYING: {
+                entity_draw(*player);
                 break;
+            }
             
-            case SCREEN_PAUSED:
-                entity_draw(player);
-                DrawText("Paused! Press ESC to resume", 500, 500, 15, BLACK);
+            case SCREEN_PAUSED: {
+                entity_draw(*player);
+                int size = 40;
+                const char *txt = "Paused! Press ESC to resume";
+                DrawText(txt, GetScreenWidth()/2 - MeasureText(txt, size)/2, 500, size, BLACK);
                 break;
+            }
         }   
 
         EndDrawing();
