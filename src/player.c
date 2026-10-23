@@ -4,7 +4,7 @@
 
 #define MAX_HEALTH 100
 #define START_HEALTH 100
-#define VEL 200
+#define VEL 400
 #define SIZE 30
 #define START_X 400
 #define START_Y 225
@@ -29,10 +29,10 @@ void player_update (Entity *p, InputState i, double tick_duration){
     float dy = 0;
 
     if(i.up){
-        dy = 1;
+        dy = -1;
     } 
     if(i.down){
-        dy = -1;
+        dy = 1;
     }
     if(i.right){
         dx = 1;

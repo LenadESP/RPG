@@ -1,7 +1,5 @@
 #include "input.h"
 #include "entity.h"
-#include "entity.c"
-#include "player.c"
 #include "player.h"
 #include "raylib.h"
 
@@ -59,7 +57,7 @@ int main(void) {
         BeginDrawing();
 
         ClearBackground(BLACK);
-        entity_draw(&player);
+        entity_draw(player);
 
         EndDrawing();
     }
