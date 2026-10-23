@@ -12,10 +12,18 @@
 #define MAX_FRAMETIME 0.25
 
 static void toggle_fullscreen(void);
+typedef enum {
+        SCREEN_MENU,      
+        SCREEN_PLAYING,   
+        SCREEN_PAUSED
+} ScreenState;
+
 
 int main(void) {
+    //Initialize some variables
     InputState input = {0};
     Entity player = player_init();
+    ScreenState screen = SCREEN_MENU;
 
     //Accumulator
     double accumulator = 0.0;
@@ -24,6 +32,7 @@ int main(void) {
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
     InitWindow(1280, 720, "RPG Game!"); //16:9
+    SetExitKey(KEY_NULL);
     SetTargetFPS(FRAME_RATE);
 
     lastTime = GetTime();
@@ -31,6 +40,23 @@ int main(void) {
     while (!WindowShouldClose()) {
         //fullscreen handler
         if (IsKeyPressed(KEY_F11)){toggle_fullscreen();}
+
+        //Game start
+        if (IsKeyPressed(KEY_ENTER) && screen == SCREEN_MENU){
+            lastTime = GetTime();
+            accumulator = 0;
+            screen = SCREEN_PLAYING;
+        }
+
+        //Game pause
+        if (IsKeyPressed(KEY_ESCAPE) && screen == SCREEN_PLAYING){
+            screen = SCREEN_PAUSED;
+        
+        } else if (IsKeyPressed(KEY_ESCAPE) && screen == SCREEN_PAUSED){
+            lastTime = GetTime();
+            accumulator = 0;
+            screen = SCREEN_PLAYING;
+        }
 
         //Accumulator's logic
         double currentTime = GetTime();
@@ -46,18 +72,33 @@ int main(void) {
         //Input logic using accumulator
         input_poll(&input);
 
-        while (accumulator >= TICK_DURATION) {
-            player_update(&player, input, TICK_DURATION);
-            accumulator -= TICK_DURATION;
+        if(screen == SCREEN_PLAYING){
+            while (accumulator >= TICK_DURATION) {
+                player_update(&player, input, TICK_DURATION);
+                accumulator -= TICK_DURATION;
+            }
         }
 
         //DRAWING LOGIC
         //Careful with the order: It's layered
 
         BeginDrawing();
+        ClearBackground(RAYWHITE);
+        
+        switch (screen) {
+            case SCREEN_MENU:
+                DrawText("Press enter to start!", 500, 500, 15, BLACK);
+                break;
 
-        ClearBackground(BLACK);
-        entity_draw(player);
+            case SCREEN_PLAYING:
+                entity_draw(player);
+                break;
+            
+            case SCREEN_PAUSED:
+                entity_draw(player);
+                DrawText("Paused! Press ESC to resume", 500, 500, 15, BLACK);
+                break;
+        }   
 
         EndDrawing();
     }
