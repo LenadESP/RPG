@@ -7,5 +7,5 @@ void entity_update(Entity *e, float dx, float dy, float dt){
 }
 
 void entity_draw(const Entity e){
-    DrawRectangle((int)e.x, (int)e.y, e.size, e.size, RED);
+    DrawRectangle((int)e.x, (int)e.y, (int)e.size, (int)e.size, RED);
 }

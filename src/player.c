@@ -2,6 +2,8 @@
 #include "entity.h"
 #include "input.h"
 
+#include <math.h>
+
 #define MAX_HEALTH 100
 #define START_HEALTH 100
 #define VEL 400
@@ -24,7 +26,7 @@ Entity player_init(void){
     return player;
 }
 
-void player_update (Entity *p, PlayerInput i, double tick_duration){
+void player_update (Entity *p, PlayerInput i, float tick_duration){
     float dx = 0;
     float dy = 0;
 
@@ -40,6 +42,13 @@ void player_update (Entity *p, PlayerInput i, double tick_duration){
     if(i.left){
         dx = -1;
     }
+    
+    //Normalize diagonal
+    const float length = sqrtf(dx*dx + dy*dy);
 
-    entity_update(p, dx, dy, tick_duration);
+    if (length > 0){
+        entity_update(p, dx/length, dy/length, tick_duration);
+    } else {
+        entity_update(p, dx, dy, tick_duration);
+    }
 }

@@ -16,7 +16,7 @@ typedef struct UIInput {
     bool pause_game;
 } UIInput;
 
-void input_poll_user(PlayerInput *in);
+void input_poll_player(PlayerInput *in);
 void input_poll_ui(UIInput *in);
 
 #endif // INPUT_H

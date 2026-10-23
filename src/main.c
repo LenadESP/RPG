@@ -1,6 +1,7 @@
 #include "input.h"
 #include "entity.h"
 #include "player.h"
+#include "screen.h"
 #include "raylib.h"
 
 #include <stdio.h>
@@ -10,7 +11,7 @@
 #define TICK_RATE 60
 #define FRAME_RATE 60
 #define MAX_FRAMETIME 0.25
-#define MAX_ENTITIES 264
+#define MAX_ENTITIES 256
 
 static void toggle_fullscreen(void);
 typedef enum {
@@ -25,8 +26,10 @@ int main(void) {
     PlayerInput player_input = {0};
     UIInput ui_input = {0};
 
-    //Define entities array and create player alias
+    //Define entities array
     Entity entities[MAX_ENTITIES] = {0};
+
+    //Initialize and create player alias
     entities[0] = player_init();
     Entity *player = &entities[0];
 
@@ -36,7 +39,7 @@ int main(void) {
     //Accumulator
     double accumulator = 0.0;
     double lastTime = 0.0;
-    const double TICK_DURATION = 1.0 / TICK_RATE;
+    const float TICK_DURATION = 1.0 / TICK_RATE;
 
     //Start window
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
@@ -47,7 +50,7 @@ int main(void) {
     lastTime = GetTime();
 
     while (!WindowShouldClose()) {
-        input_poll_user(&player_input);
+        input_poll_player(&player_input);
         input_poll_ui(&ui_input);
 
         //fullscreen handler
@@ -96,22 +99,17 @@ int main(void) {
         
         switch (screen) {
             case SCREEN_MENU: {
-                int size = 40;
-                const char *txt = "Press ENTER to start!";
-                DrawText(txt, GetScreenWidth()/2 - MeasureText(txt, size)/2, 500, size, BLACK);
+                screen_menu_draw();
                 break;
             }
 
             case SCREEN_PLAYING: {
-                entity_draw(*player);
+                screen_game_draw(entities, MAX_ENTITIES);
                 break;
             }
             
             case SCREEN_PAUSED: {
-                entity_draw(*player);
-                int size = 40;
-                const char *txt = "Paused! Press ESC to resume";
-                DrawText(txt, GetScreenWidth()/2 - MeasureText(txt, size)/2, 500, size, BLACK);
+                screen_pause_draw(entities, MAX_ENTITIES);
                 break;
             }
         }   

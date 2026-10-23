@@ -1,7 +1,7 @@
 #include "input.h"
 #include "raylib.h"
 
-void input_poll_user(PlayerInput *player_input)
+void input_poll_player(PlayerInput *player_input)
 {
     player_input->up = IsKeyDown(KEY_W);
     player_input->down = IsKeyDown(KEY_S);
