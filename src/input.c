@@ -11,6 +11,7 @@ void input_poll_player(PlayerInput *player_input)
 
 void input_poll_ui(UIInput *ui_input){
     ui_input->fullscreen = IsKeyPressed(KEY_F11);
+    ui_input->debug_mode = IsKeyPressed(KEY_F3);
     ui_input->start_game = IsKeyPressed(KEY_ENTER);
     ui_input->pause_game = IsKeyPressed(KEY_ESCAPE);
 }

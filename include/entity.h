@@ -15,7 +15,7 @@ typedef struct Entity {
     bool solid;
 } Entity;
 
-void entity_update(Entity *p, float dx, float dy, float dt,  Entity *entities, int count);
-void entity_draw(const Entity p);
+void entity_update(Entity *e, float dx, float dy, float dt,  Entity *entities, int count);
+void entity_draw(const Entity *e, bool debug);
 
 #endif

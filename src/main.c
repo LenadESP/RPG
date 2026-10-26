@@ -25,6 +25,7 @@ int main(void) {
     //Initialize some variables
     PlayerInput player_input = {0};
     UIInput ui_input = {0};
+    bool debug = false;
 
     //Define entities array
     Entity entities[MAX_ENTITIES] = {0};
@@ -64,6 +65,9 @@ int main(void) {
 
         //fullscreen handler
         if (ui_input.fullscreen){toggle_fullscreen();}
+
+        //Activate debug mode
+        if (ui_input.debug_mode){debug = !debug;}
 
         //Start game
         if (ui_input.start_game && screen == SCREEN_MENU){
@@ -113,12 +117,12 @@ int main(void) {
             }
 
             case SCREEN_PLAYING: {
-                screen_game_draw(entities, MAX_ENTITIES);
+                screen_game_draw(entities, MAX_ENTITIES, debug);
                 break;
             }
             
             case SCREEN_PAUSED: {
-                screen_pause_draw(entities, MAX_ENTITIES);
+                screen_pause_draw(entities, MAX_ENTITIES, debug);
                 break;
             }
         }   
