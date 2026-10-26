@@ -26,8 +26,6 @@ int main(void) {
     UIInput ui_input = {0};
     bool debug = false;
 
-    Camera2D camera = {0};
-
     //Define entities array
     Entity entities[MAX_ENTITIES] = {0};
 
@@ -51,6 +49,14 @@ int main(void) {
     double accumulator = 0.0;
     double lastTime = 0.0;
     const float TICK_DURATION = 1.0 / TICK_RATE;
+
+    //camera logic
+    Camera2D camera = {
+        (Vector2){ GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f }, //offset
+        (Vector2) {entities[0].x + entities[0].size / 2.0f, entities[0].y + entities[0].size / 2.0f}, //middle of player
+        0.0f,
+        1.0f
+    };
 
     //Start window
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);

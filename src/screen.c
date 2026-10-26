@@ -10,7 +10,7 @@ void screen_menu_draw(void){
 }
 
 void screen_pause_draw(const Entity *entities, int count, bool debug, Camera2D *camera){
-    screen_game_draw(entities, count, debug);
+    screen_game_draw(entities, count, debug, camera);
 
     int size = 40;
     const char *txt = "Paused! Press ESC to resume";
@@ -18,14 +18,7 @@ void screen_pause_draw(const Entity *entities, int count, bool debug, Camera2D *
 }
 
 void screen_game_draw(const Entity *entities, int count, bool debug, Camera2D *camera){
-    camera = {
-        (Vector2) {0,0}, //offset
-        (Vector2) {entities[0].x + entities[0].size / 2.0f, entities[0].y + entities[0]size / 2.0f}, //middle of player
-        0.0f,
-        1.0f
-    }
-
-    void BeginMode2D(camera);
+    BeginMode2D(*camera);
     
     for (int i = 0; i < count; i++) {
         if (!entities[i].active) continue;
@@ -36,5 +29,5 @@ void screen_game_draw(const Entity *entities, int count, bool debug, Camera2D *c
         }
     }
 
-    void EndMode2D(void);
+    EndMode2D();
 }
