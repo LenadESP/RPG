@@ -16,6 +16,6 @@ typedef struct Entity {
 } Entity;
 
 void entity_update(Entity *e, float dx, float dy, float dt,  Entity *entities, int count);
-void entity_draw(const Entity *e, bool debug);
+void entity_draw(const Entity *e);
 
 #endif

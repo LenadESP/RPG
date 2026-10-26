@@ -20,12 +20,13 @@ typedef enum {
         SCREEN_PAUSED
 } ScreenState;
 
-
 int main(void) {
     //Initialize some variables
     PlayerInput player_input = {0};
     UIInput ui_input = {0};
     bool debug = false;
+
+    Camera2D camera = {0};
 
     //Define entities array
     Entity entities[MAX_ENTITIES] = {0};
@@ -117,12 +118,12 @@ int main(void) {
             }
 
             case SCREEN_PLAYING: {
-                screen_game_draw(entities, MAX_ENTITIES, debug);
+                screen_game_draw(entities, MAX_ENTITIES, debug, &camera);
                 break;
             }
             
             case SCREEN_PAUSED: {
-                screen_pause_draw(entities, MAX_ENTITIES, debug);
+                screen_pause_draw(entities, MAX_ENTITIES, debug, &camera);
                 break;
             }
         }   

@@ -41,10 +41,6 @@ void entity_update(Entity *e, float dx, float dy, float dt, Entity *entities, in
     }
 }
 
-void entity_draw(const Entity *e, bool debug){
-    DrawRectangle((int)e->x, (int)e->y, (int)e->size, (int)e->size, RED);
-
-    if(debug){
-        DrawRectangleLinesEx(collision_rect(e), 4, YELLOW);
-    }
+void entity_draw(const Entity *e){
+    DrawRectangleRec((Rectangle){ e->x, e->y, e->size, e->size }, RED);
 }
