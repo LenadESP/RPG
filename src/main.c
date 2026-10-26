@@ -3,6 +3,7 @@
 #include "player.h"
 #include "screen.h"
 #include "raylib.h"
+#include "camera.h"
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -15,10 +16,10 @@
 
 static void toggle_fullscreen(void);
 typedef enum {
-        SCREEN_MENU,      
-        SCREEN_PLAYING,   
-        SCREEN_PAUSED
-} ScreenState;
+        GAME_MENU,      
+        GAME_PLAYING,   
+        GAME_PAUSED
+} GameState;
 
 int main(void) {
     //Initialize some variables
@@ -34,7 +35,7 @@ int main(void) {
     Entity *player = &entities[0];
 
     //Set the initial screen state to be the menu
-    ScreenState screen = SCREEN_MENU;
+    GameState game_state = GAME_MENU;
 
     //placeholder test collision box
     entities[1] = (Entity){
@@ -51,12 +52,7 @@ int main(void) {
     const float TICK_DURATION = 1.0 / TICK_RATE;
 
     //camera logic
-    Camera2D camera = {
-        (Vector2){ GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f }, //offset
-        (Vector2) {entities[0].x + entities[0].size / 2.0f, entities[0].y + entities[0].size / 2.0f}, //middle of player
-        0.0f,
-        1.0f
-    };
+    Camera2D camera = {0};
 
     //Start window
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
@@ -77,20 +73,20 @@ int main(void) {
         if (ui_input.debug_mode){debug = !debug;}
 
         //Start game
-        if (ui_input.start_game && screen == SCREEN_MENU){
+        if (ui_input.start_game && game_state == GAME_MENU){
             lastTime = GetTime();
             accumulator = 0;
-            screen = SCREEN_PLAYING;
+            game_state = GAME_PLAYING;
         }
 
         //Game pause
-        if (ui_input.pause_game && screen == SCREEN_PLAYING){
-            screen = SCREEN_PAUSED;
+        if (ui_input.pause_game && game_state == GAME_PLAYING){
+            game_state = GAME_PAUSED;
         
-        } else if (ui_input.pause_game && screen == SCREEN_PAUSED){
+        } else if (ui_input.pause_game && game_state == GAME_PAUSED){
             lastTime = GetTime();
             accumulator = 0;
-            screen = SCREEN_PLAYING;
+            game_state = GAME_PLAYING;
         }
 
         //Accumulator's logic
@@ -104,7 +100,7 @@ int main(void) {
         accumulator += delta;
         lastTime = currentTime;
 
-        if(screen == SCREEN_PLAYING){
+        if(game_state == GAME_PLAYING){
             while (accumulator >= TICK_DURATION) {
                 player_update(player, player_input, TICK_DURATION, entities, MAX_ENTITIES);
                 accumulator -= TICK_DURATION;
@@ -117,19 +113,22 @@ int main(void) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
         
-        switch (screen) {
-            case SCREEN_MENU: {
-                screen_menu_draw();
+        //Update camera
+        camera_update(&camera, player);
+
+        switch (game_state) {
+            case GAME_MENU: {
+                game_menu_draw();
                 break;
             }
 
-            case SCREEN_PLAYING: {
-                screen_game_draw(entities, MAX_ENTITIES, debug, &camera);
+            case GAME_PLAYING: {
+                game_draw(entities, MAX_ENTITIES, debug, &camera);
                 break;
             }
             
-            case SCREEN_PAUSED: {
-                screen_pause_draw(entities, MAX_ENTITIES, debug, &camera);
+            case GAME_PAUSED: {
+                game_pause_draw(entities, MAX_ENTITIES, debug, &camera);
                 break;
             }
         }   
