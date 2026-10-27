@@ -4,8 +4,10 @@
 #include "screen.h"
 #include "raylib.h"
 #include "camera.h"
+#include "texture.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 
 //Defining basic variables for the game.
@@ -15,6 +17,8 @@
 #define MAX_ENTITIES 256
 
 static void toggle_fullscreen(void);
+static void game_shutdown(void);
+
 typedef enum {
         GAME_MENU,      
         GAME_PLAYING,   
@@ -41,7 +45,7 @@ int main(void) {
     entities[1] = (Entity){
         .x = 500,
         .y = 500,
-        .size = 30,
+        .size = 16,
         .active = true,
         .solid = true
     };
@@ -60,6 +64,13 @@ int main(void) {
     SetExitKey(KEY_NULL);
     SetTargetFPS(FRAME_RATE);
 
+    //SET ATEXIT: Basically, set what exit() calls.
+    atexit(game_shutdown);
+
+    //Load all textures. This is where a loading screen would come in handy.
+    texture_load_all();
+
+    //Reset timer
     lastTime = GetTime();
 
     while (!WindowShouldClose()) {
@@ -135,7 +146,7 @@ int main(void) {
 
         EndDrawing();
     }
-    CloseWindow();
+    //also calls exit()
     return 0;
 }
 
@@ -155,4 +166,9 @@ static void toggle_fullscreen(void){
         is_fullscreen = false;
         SetWindowSize(past_w, past_h);
     }
+}
+
+static void game_shutdown(void){
+    texture_unload_all();
+    CloseWindow();
 }

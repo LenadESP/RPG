@@ -1,13 +1,14 @@
 #include "player.h"
 #include "entity.h"
 #include "input.h"
+#include "texture.h"
 
 #include <math.h>
 
 #define MAX_HEALTH 100
 #define START_HEALTH 100
 #define VEL 400
-#define SIZE 30
+#define SIZE 16
 #define START_X 400
 #define START_Y 225
 
@@ -20,6 +21,7 @@ Entity player_init(void){
         .vel = VEL,
         .health = START_HEALTH,
         .max_health = MAX_HEALTH,
+        .texture_id = TEX_PLAYER,
         .active = true,
         .solid = true
     };

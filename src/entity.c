@@ -1,6 +1,7 @@
 #include "entity.h"
 #include "raylib.h"
 #include "collision.h"
+#include "texture.h"
 
 void entity_update(Entity *e, float dx, float dy, float dt, Entity *entities, int count) {
     Rectangle self  = collision_rect(e);
@@ -42,5 +43,9 @@ void entity_update(Entity *e, float dx, float dy, float dt, Entity *entities, in
 }
 
 void entity_draw(const Entity *e){
-    DrawRectangleRec((Rectangle){ e->x, e->y, e->size, e->size }, RED);
+    TextureAsset asset = texture_get(e->texture_id);
+    DrawTextureRec(asset.texture,
+                   (Rectangle){ 0, 0, asset.frame_w, asset.frame_h },
+                   (Vector2){ e->x, e->y },
+                   WHITE);
 }
