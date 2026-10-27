@@ -8,7 +8,8 @@
 #define MAX_HEALTH 100
 #define START_HEALTH 100
 #define VEL 400
-#define SIZE 16
+#define HB_W 8
+#define HB_H 12
 #define START_X 400
 #define START_Y 225
 
@@ -17,7 +18,8 @@ Entity player_init(void){
     Entity player = {
         .x = START_X,
         .y = START_Y,
-        .size = SIZE,
+        .hb_w = HB_W,
+        .hb_h = HB_H,
         .vel = VEL,
         .health = START_HEALTH,
         .max_health = MAX_HEALTH,

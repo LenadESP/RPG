@@ -1,12 +1,11 @@
 #include "input.h"
 #include "entity.h"
 #include "player.h"
-#include "screen.h"
+#include "game.h"
 #include "raylib.h"
 #include "camera.h"
 #include "texture.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -45,7 +44,8 @@ int main(void) {
     entities[1] = (Entity){
         .x = 500,
         .y = 500,
-        .size = 16,
+        .hb_h = 16,
+        .hb_w = 16,
         .active = true,
         .solid = true
     };

@@ -3,10 +3,12 @@
 
 #include <stdbool.h>
 
+//x and y are the corner of the hb
 typedef struct Entity {
     float x;
     float y;
-    float size;
+    float hb_w;
+    float hb_h;
     float vel;
     float health;
     float max_health;

@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 Rectangle collision_rect(const Entity *e) {
-    return (Rectangle){ e->x, e->y, e->size, e->size };
+    return (Rectangle){ e->x, e->y, e->hb_w, e->hb_h};
 }
 
 bool collision_check(const Entity *p, const Entity *e) {
