@@ -7,7 +7,7 @@
 
 #define MAX_HEALTH 100
 #define START_HEALTH 100
-#define VEL 400
+#define VEL 200
 #define HB_W 8
 #define HB_H 12
 #define START_X 400

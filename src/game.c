@@ -35,8 +35,10 @@ void game_draw(const Entity *entities, int count, bool debug, Camera2D *camera){
         if (!entities[i].active) continue;
 
         entity_draw(&entities[i]);
+
+        //Drawing the hitbox
         if(debug){
-            DrawRectangleLinesEx(collision_rect(&entities[i]), 1, BLACK);
+            DrawRectangleLinesEx(collision_rect(&entities[i]), 1, YELLOW);
         }
     }
 

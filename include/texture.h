@@ -16,6 +16,7 @@ typedef struct TextureAsset {
 typedef enum {
     TEX_NONE,
     TEX_PLAYER,
+    TEX_TILESET_FLOOR,
     TEX_COUNT
 } TextureId;
 

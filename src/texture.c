@@ -14,6 +14,7 @@ typedef struct {
 static const TextureDef texture_defs[TEX_COUNT] = {
     [TEX_NONE]   = { "assets/none.png", 16, 16, 0, 0},
     [TEX_PLAYER] = { "assets/Actor/CharacterAnimated/NinjaGreen/SpriteSheet.png", 32, 32, 12, 12},
+    [TEX_TILESET_FLOOR] = {"assets/Backgrounds/Tilesets/TilesetFloor.png", 16, 16, 0, 0}
 };
 
 static TextureAsset textures[TEX_COUNT];

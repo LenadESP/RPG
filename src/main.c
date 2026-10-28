@@ -50,6 +50,15 @@ int main(void) {
         .solid = true
     };
 
+    entities[2] = (Entity){
+        .x = 450,
+        .y = 450,
+        .hb_h = 16,
+        .hb_w = 16,
+        .active = true,
+        .solid = true
+    };
+
     //Accumulator
     double accumulator = 0.0;
     double lastTime = 0.0;
