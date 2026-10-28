@@ -37,9 +37,10 @@ edukia eta sistema grafikoak falta dira.
 | Pantaila-egoerak (menua / jokoa / pausa) | Eginda |
 | Leiho birdimentsionagarria eta pantaila osoa | Eginda |
 | Kolisioak (AABB) | Eginda |
-| Texturak eta animazioak | Egiten |
+| Texturak | Eginda |
 | Kamera | Eginda |
-| *Tile* bidezko mapak | Egiteke |
+| Animazioak | Egiteke |
+| *Tile* bidezko mapak | Egiten |
 | Elkarrizketa-sistema | Egiteke |
 
 ---
