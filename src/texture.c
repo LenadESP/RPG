@@ -4,14 +4,16 @@ typedef struct {
     const char *path;
     int frame_w;
     int frame_h;
+    int off_x;
+    int off_y;
 } TextureDef;
 
 
 //This is basically the list of all textures avaiable. 
 //TEX NONE MUST ALWAYS REMAIN THE FIRST
 static const TextureDef texture_defs[TEX_COUNT] = {
-    [TEX_NONE]   = { "assets/none.png", 16, 16 },
-    [TEX_PLAYER] = { "assets/Actor/CharacterAnimated/NinjaGreen/SpriteSheet.png", 32, 32 },
+    [TEX_NONE]   = { "assets/none.png", 16, 16, 0, 0},
+    [TEX_PLAYER] = { "assets/Actor/CharacterAnimated/NinjaGreen/SpriteSheet.png", 32, 32, 12, 12},
 };
 
 static TextureAsset textures[TEX_COUNT];
@@ -34,6 +36,8 @@ void texture_load_all(void){
 
             textures[i].frame_w = texture_defs[i].frame_w;
             textures[i].frame_h = texture_defs[i].frame_h;
+            textures[i].off_x = texture_defs[i].off_x;
+            textures[i].off_y = texture_defs[i].off_y;
             textures[i].columns = textures[i].texture.width  / texture_defs[i].frame_w;
             textures[i].rows    = textures[i].texture.height / texture_defs[i].frame_h;
         }

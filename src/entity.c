@@ -46,6 +46,6 @@ void entity_draw(const Entity *e){
     TextureAsset asset = texture_get(e->texture_id);
     DrawTextureRec(asset.texture,
                    (Rectangle){ 0, 0, asset.frame_w, asset.frame_h },
-                   (Vector2){ e->x, e->y },
+                   (Vector2){e->x - asset.off_x, e->y - asset.off_y},
                    WHITE);
 }

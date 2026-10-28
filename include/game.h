@@ -1,5 +1,5 @@
-#ifndef SCREEN_H
-#define SCREEN_H
+#ifndef GAME_H
+#define GAME_H
 
 #include "entity.h"
 #include "raylib.h"

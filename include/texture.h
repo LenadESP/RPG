@@ -7,6 +7,8 @@ typedef struct TextureAsset {
     Texture2D texture;
     int frame_w;
     int frame_h;
+    int off_x;
+    int off_y;
     int columns;
     int rows;
 } TextureAsset;
