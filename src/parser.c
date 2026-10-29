@@ -28,6 +28,7 @@ int *parse_csv(const char *text, int *out_width, int *out_height)
     if (width <= 0 || height <= 0) return NULL;
 
     int *tiles = malloc((size_t)width * (size_t)height * sizeof(int));
+
     if (tiles == NULL) return NULL;
 
     /* Second pass: read width*height numbers in order.
