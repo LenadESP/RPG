@@ -15,7 +15,7 @@ void camera_update(Camera2D *cam, const Entity *player){
     //CAMERA LOGIC
     *cam = (Camera2D){
         (Vector2){ GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f }, //offset
-        (Vector2) {player->x + player->hb_w / 2.0f, player->y + player->hb_h / 2.0f}, //middle of player
+        (Vector2) {player->x , player->y - player->hb_h / 2.0f}, //middle of player
         0.0f, //Rotation
         (float)zoom
     };

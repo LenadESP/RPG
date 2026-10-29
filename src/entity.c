@@ -4,7 +4,6 @@
 #include "texture.h"
 
 void entity_update(Entity *e, float dx, float dy, float dt, Entity *entities, int count) {
-    Rectangle self  = collision_rect(e);
     Rectangle other;
 
     // --- EJE X ---
@@ -19,8 +18,9 @@ void entity_update(Entity *e, float dx, float dy, float dt, Entity *entities, in
 
             other = collision_rect(&entities[i]);
 
-            if (dx > 0.0f) e->x = other.x - self.width;
-            else           e->x = other.x + other.width;
+            // x is the horizontal CENTER of the hitbox
+            if (dx > 0.0f) e->x = other.x - e->hb_w / 2.0f;
+            else           e->x = other.x + other.width + e->hb_w / 2.0f;
         }
     }
 
@@ -36,8 +36,9 @@ void entity_update(Entity *e, float dx, float dy, float dt, Entity *entities, in
 
             other = collision_rect(&entities[i]);
 
-            if (dy > 0.0f) e->y = other.y - self.height;
-            else           e->y = other.y + other.height;
+            // y is the BOTTOM edge of the hitbox
+            if (dy > 0.0f) e->y = other.y;
+            else           e->y = other.y + other.height + e->hb_h;
         }
     }
 }
