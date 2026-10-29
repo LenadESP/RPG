@@ -3,9 +3,10 @@
 
 #include "entity.h"
 #include "raylib.h"
+#include "map.h"
 
 void game_menu_draw(void);
-void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *camera);
-void game_draw(const Entity *entities, int count, bool debug, Camera2D *camera);
+void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *camera, Map *map);
+void game_draw(const Entity *entities, int count, bool debug, Camera2D *camera, Map *map);
 
 #endif

@@ -48,6 +48,12 @@ CF_LIN  := -I$(PREFIX)/include
 LIB_LIN := -L$(PREFIX)/lib -lraylib -lm -ldl -lpthread \
            -lX11 -lXrandr -lXinerama -lXcursor -lXi
 
+# make ASAN=1 -> build with AddressSanitizer (leaks, overflows, use-after-free)
+ifdef ASAN
+	CFLAGS  += -fsanitize=address -fno-omit-frame-pointer
+	LIB_LIN += -fsanitize=address
+endif
+
 CC_WIN  := x86_64-w64-mingw32-gcc
 CF_WIN  := -I$(RAYLIB_WIN)/include
 LIB_WIN := -L$(RAYLIB_WIN)/lib -lraylib -lopengl32 -lgdi32 -lwinmm \

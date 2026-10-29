@@ -12,8 +12,8 @@ typedef struct {
 //This is basically the list of all textures avaiable. 
 //TEX NONE MUST ALWAYS REMAIN THE FIRST
 static const TextureDef texture_defs[TEX_COUNT] = {
-    [TEX_NONE]   = { "assets/none.png", 16, 16, 0, 0},
-    [TEX_PLAYER] = { "assets/Actor/CharacterAnimated/NinjaGreen/SpriteSheet.png", 32, 32, 12, 12},
+    [TEX_NONE]   = { "assets/none.png", 16, 16, 8, 16},
+    [TEX_PLAYER] = { "assets/Actor/CharacterAnimated/NinjaGreen/SpriteSheet.png", 32, 32, 16, 24},
     [TEX_TILESET_FLOOR] = {"assets/Backgrounds/Tilesets/TilesetFloor.png", 16, 16, 0, 0}
 };
 

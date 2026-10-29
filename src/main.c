@@ -5,6 +5,7 @@
 #include "raylib.h"
 #include "camera.h"
 #include "texture.h"
+#include "map.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -28,6 +29,7 @@ int main(void) {
     //Initialize some variables
     PlayerInput player_input = {0};
     UIInput ui_input = {0};
+    Map map = {0};
     bool debug = false;
 
     //Define entities array
@@ -44,15 +46,6 @@ int main(void) {
     entities[1] = (Entity){
         .x = 500,
         .y = 500,
-        .hb_h = 16,
-        .hb_w = 16,
-        .active = true,
-        .solid = true
-    };
-
-    entities[2] = (Entity){
-        .x = 450,
-        .y = 450,
         .hb_h = 16,
         .hb_w = 16,
         .active = true,
@@ -78,6 +71,7 @@ int main(void) {
 
     //Load all textures. This is where a loading screen would come in handy.
     texture_load_all();
+    map_load(&map);
 
     //Reset timer
     lastTime = GetTime();
@@ -143,18 +137,19 @@ int main(void) {
             }
 
             case GAME_PLAYING: {
-                game_draw(entities, MAX_ENTITIES, debug, &camera);
+                game_draw(entities, MAX_ENTITIES, debug, &camera, &map);
                 break;
             }
             
             case GAME_PAUSED: {
-                game_pause_draw(entities, MAX_ENTITIES, debug, &camera);
+                game_pause_draw(entities, MAX_ENTITIES, debug, &camera, &map);
                 break;
             }
         }   
 
         EndDrawing();
     }
+    map_unload(&map);
     //also calls exit()
     return 0;
 }

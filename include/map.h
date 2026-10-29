@@ -1,6 +1,8 @@
 #ifndef MAP_H
 #define MAP_H
 
+#define TILE_SIZE 16
+
 #include "texture.h"
 
 typedef struct Layer{
@@ -17,7 +19,7 @@ typedef struct Map{
 
 void map_load(Map *map);
 void map_unload(Map *map);
-void map_draw(Map *map);
+void map_draw(const Map *map);
 void map_is_solid(void);
 
 #endif

@@ -3,6 +3,7 @@
 .obsidian
 /build
 tiled.AppImage
+maps
 
 # Prerequisites
 *.d
