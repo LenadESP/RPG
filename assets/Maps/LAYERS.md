@@ -8,6 +8,7 @@ Layers are listed in draw order (first = bottom). Draw entities/player where mar
 `Collision` is never drawn: any value other than `-1` is non-walkable.
 
 All tilesets live in `assets/Backgrounds/Tilesets/`.
+Each map folder also has `<map>_preview.png`: a crisp 2x render (32 px per tile) without the collision layer.
 
 ## camino_sur (41 x 60)
 
