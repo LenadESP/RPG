@@ -8,6 +8,8 @@ void map_load(Map *map, const LayerDef *defs, int count, int lay_cut){
     
     map->layers = malloc(count * sizeof(Layer));
 
+    map->layer_cut = lay_cut;
+
     int *parsed_text = NULL;
     int width = 0;
     int height = 0;
@@ -18,8 +20,6 @@ void map_load(Map *map, const LayerDef *defs, int count, int lay_cut){
         if(text != NULL){
             parsed_text = parse_csv(text, &width, &height);
             UnloadFileText(text);
-
-            map->layer_cut = lay_cut;
 
             if(parsed_text != NULL){
 
@@ -35,15 +35,15 @@ void map_load(Map *map, const LayerDef *defs, int count, int lay_cut){
 
                 } else {
                     free(parsed_text);
-                    TraceLog(LOG_WARNING, "Error allocating memory for the layer. wtf, how u got here dude");
+                    TraceLog(LOG_FATAL, "Error allocating memory for the layer. wtf, how u got here dude");
                     break;
                 }
             } else {
-                TraceLog(LOG_WARNING, "Error loading the map, map parsing is NULL");
+                TraceLog(LOG_FATAL, "Error loading the map, map parsing is NULL");
                 break;
             }
         } else {
-            TraceLog(LOG_WARNING, "Error loading the map, the file is empty or has not been found");
+            TraceLog(LOG_FATAL, "Error loading the map, the file is empty or has not been found");
             break;
         }
     }

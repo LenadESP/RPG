@@ -4,8 +4,8 @@
 
 #include <math.h>
 
-#define VIRTUAL_W 480   // 30 tiles de 16px
-#define VIRTUAL_H 272   // 17 tiles de 16px
+#define VIRTUAL_W 240   // 30 tiles de 16px
+#define VIRTUAL_H 136   // 17 tiles de 16px
 
 void camera_update(Camera2D *cam, const Entity *player){ 
     //ZOOM LOGIC
