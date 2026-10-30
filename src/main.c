@@ -30,6 +30,14 @@ int main(void) {
     PlayerInput player_input = {0};
     UIInput ui_input = {0};
     Map map = {0};
+
+    const LayerDef camino_sur_layers[] = {
+        { "assets/Maps/camino_sur/camino_sur_Ground.csv", TEX_TILESET_FLOOR        },
+        { "assets/Maps/camino_sur/camino_sur_Decor.csv",  TEX_TILESET_FLOOR_DETAIL },
+        { "assets/Maps/camino_sur/camino_sur_Props.csv",  TEX_TILESET_ELEMENT  },
+        { "assets/Maps/camino_sur/camino_sur_Trees.csv",  TEX_TILESET_NATURE  },
+    };
+
     bool debug = false;
 
     //Define entities array
@@ -71,7 +79,7 @@ int main(void) {
 
     //Load all textures. This is where a loading screen would come in handy.
     texture_load_all();
-    map_load(&map);
+    map_load(&map, camino_sur_layers, sizeof(camino_sur_layers) / sizeof(camino_sur_layers[0]));
 
     //Reset timer
     lastTime = GetTime();

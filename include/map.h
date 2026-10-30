@@ -5,6 +5,11 @@
 
 #include "texture.h"
 
+typedef struct LayerDef {
+    const char *path;
+    TextureId tex;
+} LayerDef;
+
 typedef struct Layer{
     int *tiles;
     TextureId tex;
@@ -17,7 +22,7 @@ typedef struct Map{
     int layer_amount;
 }Map;
 
-void map_load(Map *map);
+void map_load(Map *map, const LayerDef *defs, int count);
 void map_unload(Map *map);
 void map_draw(const Map *map);
 void map_is_solid(void);

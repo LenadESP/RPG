@@ -14,7 +14,11 @@ typedef struct {
 static const TextureDef texture_defs[TEX_COUNT] = {
     [TEX_NONE]   = { "assets/none.png", 16, 16, 8, 16},
     [TEX_PLAYER] = { "assets/Actor/CharacterAnimated/NinjaGreen/SpriteSheet.png", 32, 32, 16, 24},
-    [TEX_TILESET_FLOOR] = {"assets/Backgrounds/Tilesets/TilesetFloor.png", 16, 16, 0, 0}
+    [TEX_TILESET_FLOOR] = {"assets/Backgrounds/Tilesets/TilesetFloor.png", 16, 16, 0, 0},
+    [TEX_TILESET_FLOOR_DETAIL] = {"assets/Backgrounds/Tilesets/TilesetFloorDetail.png", 16, 16, 0, 0},
+    [TEX_TILESET_ELEMENT] = {"assets/Backgrounds/Tilesets/TilesetElement.png", 16, 16, 0, 0},
+    [TEX_TILESET_NATURE] = {"assets/Backgrounds/Tilesets/TilesetNature.png", 16, 16, 0, 0},
+    [TEX_TILESET_COLLISIONS] = {"assets/Backgrounds/Tilesets/TilesetLogic.png", 16, 16, 0, 0},
 };
 
 static TextureAsset textures[TEX_COUNT];

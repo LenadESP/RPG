@@ -4,43 +4,45 @@
 #include "raylib.h"
 #include <stdlib.h>
 
-void map_load(Map *map){
-    //Hardcoded as a placeholder until I wire level.c
-    char *text = LoadFileText("assets/Maps/map.csv");
+void map_load(Map *map, const LayerDef *defs, int count){
+    
+    map->layers = malloc(count * sizeof(Layer));
 
     int *parsed_text = NULL;
     int width = 0;
     int height = 0;
 
-    if(text != NULL){
-        parsed_text = parse_csv(text, &width, &height);
-        UnloadFileText(text);
+    for (int i = 0; i < count; i++){
+        char *text = LoadFileText(defs[i].path);
 
-        if(parsed_text != NULL){
-            //Single layer, also a placeholder (that 1)
-            map->layers = malloc(1 * sizeof(Layer));
+        if(text != NULL){
+            parsed_text = parse_csv(text, &width, &height);
+            UnloadFileText(text);
 
-            if(map->layers != NULL){
-                map->layers[0].tiles = parsed_text;
-                map->layers[0].tex = TEX_TILESET_FLOOR;
+            if(parsed_text != NULL){
 
-                map->w = width;
-                map->h = height;
+                if(map->layers != NULL){
+                    map->layers[i].tiles = parsed_text;
+                    map->layers[i].tex = TEX_TILESET_FLOOR;
 
-                //same as before
-                map->layer_amount = 1;
+                    map->w = width;
+                    map->h = height;
 
-            } else {
-                free(parsed_text);
-                TraceLog(LOG_WARNING, "Error allocating memory for the layer. wtf, how u got here dude");
+                    //same as before
+                    map->layer_amount = i+1;
+
+                } else {
+                    free(parsed_text);
+                    TraceLog(LOG_WARNING, "Error allocating memory for the layer. wtf, how u got here dude");
+                }
             }
-        }
 
-        else {
-            TraceLog(LOG_WARNING, "Error loading the map, map parsing is NULL");
-        }
+            else {
+                TraceLog(LOG_WARNING, "Error loading the map, map parsing is NULL");
+            }
 
-    } else {TraceLog(LOG_WARNING, "Error loading the map, the file is empty or has not been found");}
+        } else {TraceLog(LOG_WARNING, "Error loading the map, the file is empty or has not been found");}
+    }
 }
 
 void map_unload(Map *map){
