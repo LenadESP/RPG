@@ -4,7 +4,7 @@
 #include "raylib.h"
 #include <stdlib.h>
 
-void map_load(Map *map, const LayerDef *defs, int count){
+void map_load(Map *map, const LayerDef *defs, int count, int lay_cut){
     
     map->layers = malloc(count * sizeof(Layer));
 
@@ -19,11 +19,13 @@ void map_load(Map *map, const LayerDef *defs, int count){
             parsed_text = parse_csv(text, &width, &height);
             UnloadFileText(text);
 
+            map->layer_cut = lay_cut;
+
             if(parsed_text != NULL){
 
                 if(map->layers != NULL){
                     map->layers[i].tiles = parsed_text;
-                    map->layers[i].tex = TEX_TILESET_FLOOR;
+                    map->layers[i].tex = defs[i].tex;
 
                     map->w = width;
                     map->h = height;
@@ -34,14 +36,16 @@ void map_load(Map *map, const LayerDef *defs, int count){
                 } else {
                     free(parsed_text);
                     TraceLog(LOG_WARNING, "Error allocating memory for the layer. wtf, how u got here dude");
+                    break;
                 }
-            }
-
-            else {
+            } else {
                 TraceLog(LOG_WARNING, "Error loading the map, map parsing is NULL");
+                break;
             }
-
-        } else {TraceLog(LOG_WARNING, "Error loading the map, the file is empty or has not been found");}
+        } else {
+            TraceLog(LOG_WARNING, "Error loading the map, the file is empty or has not been found");
+            break;
+        }
     }
 }
 
@@ -61,8 +65,8 @@ void map_unload(Map *map){
     map->layer_amount = 0;
 }
 
-void map_draw(const Map *map){
-    for (int l = 0; l < map->layer_amount; l++) {
+void map_draw(const Map *map, int first, int last){
+    for (int l = first; l < last; l++) {
 
         const Layer *layer = &map->layers[l];
         TextureAsset asset = texture_get(layer->tex);

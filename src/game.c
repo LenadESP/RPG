@@ -21,7 +21,7 @@ void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *ca
 void game_draw(const Entity *entities, int count, bool debug, Camera2D *camera, Map *map){
     BeginMode2D(*camera);
 
-    map_draw(map);
+    map_draw(map, 0, map->layer_cut);
     
     for (int i = 0; i < count; i++) {
         if (!entities[i].active) continue;
@@ -33,6 +33,8 @@ void game_draw(const Entity *entities, int count, bool debug, Camera2D *camera, 
             DrawRectangleLinesEx(collision_rect(&entities[i]), 1, YELLOW);
         }
     }
+
+    map_draw(map, map->layer_cut, map->layer_amount);
 
     EndMode2D();
 }

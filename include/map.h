@@ -20,11 +20,12 @@ typedef struct Map{
     int h;
     Layer *layers;
     int layer_amount;
+    int layer_cut;
 }Map;
 
-void map_load(Map *map, const LayerDef *defs, int count);
+void map_load(Map *map, const LayerDef *defs, int count, int layer_cut);
 void map_unload(Map *map);
-void map_draw(const Map *map);
+void map_draw(const Map *map, int first, int last);
 void map_is_solid(void);
 
 #endif
