@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 
-//x and y are the corner of the hb
 typedef struct Entity {
     float x;
     float y;
