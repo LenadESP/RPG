@@ -39,6 +39,8 @@ int main(void) {
         { "assets/Maps/camino_sur/camino_sur_AbovePlayer.csv", TEX_TILESET_NATURE},
     };
 
+    const char *collision_path = "assets/Maps/camino_sur/camino_sur_Collision.csv";
+
     bool debug = false;
 
     //Define entities array
@@ -50,16 +52,6 @@ int main(void) {
 
     //Set the initial screen state to be the menu
     GameState game_state = GAME_MENU;
-
-    //placeholder test collision box
-    entities[1] = (Entity){
-        .x = 500,
-        .y = 500,
-        .hb_h = 16,
-        .hb_w = 16,
-        .active = true,
-        .solid = true
-    };
 
     //Accumulator
     double accumulator = 0.0;
@@ -80,7 +72,7 @@ int main(void) {
 
     //Load all textures. This is where a loading screen would come in handy.
     texture_load_all();
-    map_load(&map, camino_sur_layers, sizeof(camino_sur_layers) / sizeof(camino_sur_layers[0]), 4);
+    map_load(&map, camino_sur_layers, sizeof(camino_sur_layers) / sizeof(camino_sur_layers[0]), 4, collision_path);
 
     //Calculate map height and width in pixels
     int map_h = map.h * TILE_SIZE;
@@ -129,7 +121,7 @@ int main(void) {
 
         if(game_state == GAME_PLAYING){
             while (accumulator >= TICK_DURATION) {
-                player_update(player, player_input, TICK_DURATION, entities, MAX_ENTITIES);
+                player_update(player, player_input, TICK_DURATION, entities, MAX_ENTITIES, &map);
                 accumulator -= TICK_DURATION;
             }
         }
@@ -159,6 +151,10 @@ int main(void) {
                 break;
             }
         }   
+
+        //player position for spawn point lmfao
+        DrawText(TextFormat("X: %.2f", entities[0].x), 10, 10, 20, BLACK);
+        DrawText(TextFormat("Y: %.2f", entities[0].y), 10, 34, 20, BLACK);
 
         EndDrawing();
     }

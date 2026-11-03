@@ -4,7 +4,7 @@
 #include "raylib.h"
 #include <stdlib.h>
 
-void map_load(Map *map, const LayerDef *defs, int count, int lay_cut){
+void map_load(Map *map, const LayerDef *defs, int count, int lay_cut, const char *collision_path){
     
     map->layers = malloc(count * sizeof(Layer));
 
@@ -47,6 +47,22 @@ void map_load(Map *map, const LayerDef *defs, int count, int lay_cut){
             break;
         }
     }
+
+    char *collision_text = LoadFileText(collision_path);
+
+    if (collision_text == NULL) {
+        TraceLog(LOG_FATAL, "Collision layer not found: %s", collision_path);
+    }
+
+    int collision_w = 0;
+    int collision_h = 0;
+
+    map->collision = parse_csv(collision_text, &collision_w, &collision_h);
+    UnloadFileText(collision_text);
+
+    if (map->collision == NULL) {
+        TraceLog(LOG_FATAL, "Collision layer failed to parse: %s", collision_path);
+    }
 }
 
 void map_unload(Map *map){
@@ -57,7 +73,9 @@ void map_unload(Map *map){
     
     //Then we free the layers, set the pointer to NULL, and reset all values
     free(map->layers);
+    free(map->collision);
     map->layers = NULL;
+    map->collision = NULL;
 
     map->w = 0;
     map->h = 0;
@@ -99,6 +117,11 @@ void map_draw(const Map *map, int first, int last){
     }
 }
 
-void map_is_solid(){
+/* Anything outside the map counts as solid, so the player cannot walk
+   off the edge and we do not need border barriers. */
+bool map_is_solid(const Map *map, int tile_x, int tile_y){
+    if (tile_x < 0 || tile_x >= map->w) return true;
+    if (tile_y < 0 || tile_y >= map->h) return true;
 
+    return map->collision[tile_y * map->w + tile_x] >= 0;
 }

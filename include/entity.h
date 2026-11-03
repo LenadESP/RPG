@@ -2,6 +2,7 @@
 #define ENTITY_H
 
 #include <stdbool.h>
+#include "map.h"
 
 typedef struct Entity {
     float x;
@@ -16,7 +17,7 @@ typedef struct Entity {
     bool solid;
 } Entity;
 
-void entity_update(Entity *e, float dx, float dy, float dt,  Entity *entities, int count);
+void entity_update(Entity *e, float dx, float dy, float dt,  Entity *entities, int count, const Map *map);
 void entity_draw(const Entity *e);
 
 #endif

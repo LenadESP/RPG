@@ -4,6 +4,7 @@
 #define TILE_SIZE 16
 
 #include "texture.h"
+#include <stdbool.h>
 
 typedef struct LayerDef {
     const char *path;
@@ -21,11 +22,12 @@ typedef struct Map{
     Layer *layers;
     int layer_amount;
     int layer_cut;
+    int *collision; // one tile per cell, -1 = walkable
 }Map;
 
-void map_load(Map *map, const LayerDef *defs, int count, int layer_cut);
+void map_load(Map *map, const LayerDef *defs, int count, int layer_cut, const char *collision_path);
 void map_unload(Map *map);
 void map_draw(const Map *map, int first, int last);
-void map_is_solid(void);
+bool map_is_solid(const Map *map, int tile_x, int tile_y);
 
 #endif
