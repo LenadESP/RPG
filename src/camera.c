@@ -7,7 +7,7 @@
 #define VIRTUAL_W 240   // 30 tiles de 16px
 #define VIRTUAL_H 136   // 17 tiles de 16px
 
-void camera_update(Camera2D *cam, const Entity *player, int map_h, int map_w){ 
+void camera_update(Camera2D *cam, const Entity *player, int map_w, int map_h){ 
     //ZOOM LOGIC
     int zoom_x = GetScreenWidth() / VIRTUAL_W;
     int zoom_y = GetScreenHeight() / VIRTUAL_H;
@@ -15,8 +15,8 @@ void camera_update(Camera2D *cam, const Entity *player, int map_h, int map_w){
     if (zoom < 1) zoom = 1;
 
     //Calculate medium viewport
-    float medium_y = (GetScreenHeight()/2.0f) / zoom_y;
-    float medium_x = (GetScreenWidth()/2.0f) / zoom_x;
+    float medium_y = (GetScreenHeight()/2.0f) / zoom;
+    float medium_x = (GetScreenWidth()/2.0f) / zoom;
 
 
     //Set and clamp target
@@ -27,10 +27,11 @@ void camera_update(Camera2D *cam, const Entity *player, int map_h, int map_w){
     if(target_x > map_w - medium_x){target_x = map_w - medium_x;}
     
     if(target_y < medium_y){target_y = medium_y;}
-    if(target_y > map_h - medium_y){target_y = medium_y;}
+    if(target_y > map_h - medium_y){target_y = map_h - medium_y;}
 
-
-
+    //idk what ts does but it fixes stripping so it must me important ig.
+    target_x = floorf(target_x * zoom) / zoom;
+    target_y = floorf(target_y * zoom) / zoom;
     
     //CAMERA LOGIC
     *cam = (Camera2D){

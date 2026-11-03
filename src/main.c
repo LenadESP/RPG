@@ -141,7 +141,7 @@ int main(void) {
         ClearBackground(RAYWHITE);
         
         //Update camera
-        camera_update(&camera, player, map_h, map_w);
+        camera_update(&camera, player, map_w, map_h);
 
         switch (game_state) {
             case GAME_MENU: {

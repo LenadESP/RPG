@@ -47,6 +47,14 @@ void player_update (Entity *p, PlayerInput i, float tick_duration, Entity *entit
     if(i.left){
         dx = -1;
     }
+
+    if(i.up && i.down){
+        dy = 0;
+    }
+
+    if(i.right && i.left){
+        dx = 0;
+    }
     
     //Normalize diagonal
     const float length = sqrtf(dx*dx + dy*dy);

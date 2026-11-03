@@ -4,6 +4,6 @@
 #include "raylib.h"
 #include "entity.h"
 
-void camera_update(Camera2D *cam, const Entity *player, int map_h, int map_w);
+void camera_update(Camera2D *cam, const Entity *player, int map_w, int map_h);
 
 #endif
