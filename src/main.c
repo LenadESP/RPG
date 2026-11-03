@@ -82,6 +82,10 @@ int main(void) {
     texture_load_all();
     map_load(&map, camino_sur_layers, sizeof(camino_sur_layers) / sizeof(camino_sur_layers[0]), 4);
 
+    //Calculate map height and width in pixels
+    int map_h = map.h * TILE_SIZE;
+    int map_w = map.w * TILE_SIZE;
+
     //Reset timer
     lastTime = GetTime();
 
@@ -137,7 +141,7 @@ int main(void) {
         ClearBackground(RAYWHITE);
         
         //Update camera
-        camera_update(&camera, player);
+        camera_update(&camera, player, map_h, map_w);
 
         switch (game_state) {
             case GAME_MENU: {
