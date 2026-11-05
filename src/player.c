@@ -4,15 +4,9 @@
 #include "texture.h"
 #include "map.h"
 
-#include <math.h>
+#include "defines.h"
 
-#define MAX_HEALTH 100
-#define START_HEALTH 100
-#define VEL 130
-#define HB_W 8
-#define HB_H 12
-#define START_X 327
-#define START_Y 846
+#include <math.h>
 
 
 Entity player_init(void){
@@ -21,7 +15,7 @@ Entity player_init(void){
         .y = START_Y,
         .hb_w = HB_W,
         .hb_h = HB_H,
-        .vel = VEL,
+        .vel = PLAYER_VEL,
         .health = START_HEALTH,
         .max_health = MAX_HEALTH,
         .texture_id = TEX_PLAYER,

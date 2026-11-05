@@ -1,4 +1,5 @@
 #include "texture.h"
+#include <stdbool.h>
 
 typedef struct {
     const char *path;
@@ -6,6 +7,7 @@ typedef struct {
     int frame_h;
     int off_x;
     int off_y;
+    bool smooth;
 } TextureDef;
 
 
@@ -13,12 +15,29 @@ typedef struct {
 //TEX NONE MUST ALWAYS REMAIN THE FIRST
 static const TextureDef texture_defs[TEX_COUNT] = {
     [TEX_NONE]   = { "assets/none.png", 16, 16, 8, 16},
-    [TEX_PLAYER] = { "assets/Actor/CharacterAnimated/NinjaGreen/SpriteSheet.png", 32, 32, 16, 24},
+    [TEX_PLAYER] = { "assets/Actor/CharacterAnimated/NinjaGreen/SpriteSheet.png", 32, 32, 16, 24, false},
     [TEX_TILESET_FLOOR] = {"assets/Backgrounds/Tilesets/TilesetFloor.png", 16, 16, 0, 0},
-    [TEX_TILESET_FLOOR_DETAIL] = {"assets/Backgrounds/Tilesets/TilesetFloorDetail.png", 16, 16, 0, 0},
-    [TEX_TILESET_ELEMENT] = {"assets/Backgrounds/Tilesets/TilesetElement.png", 16, 16, 0, 0},
-    [TEX_TILESET_NATURE] = {"assets/Backgrounds/Tilesets/TilesetNature.png", 16, 16, 0, 0},
-    [TEX_TILESET_COLLISIONS] = {"assets/Backgrounds/Tilesets/TilesetLogic.png", 16, 16, 0, 0},
+    [TEX_TILESET_FLOOR_DETAIL] = {"assets/Backgrounds/Tilesets/TilesetFloorDetail.png", 16, 16, 0, 0, false},
+    [TEX_TILESET_ELEMENT] = {"assets/Backgrounds/Tilesets/TilesetElement.png", 16, 16, 0, 0, false},
+    [TEX_TILESET_NATURE] = {"assets/Backgrounds/Tilesets/TilesetNature.png", 16, 16, 0, 0, false},
+    [TEX_TILESET_COLLISIONS] = {"assets/Backgrounds/Tilesets/TilesetLogic.png", 16, 16, 0, 0, false},
+    
+    [TEX_MAINMENU_BG]     = {"assets/Menus/MainMenu/sheets/background.png", 1672, 941, 0, 0, true},
+    [TEX_MAINMENU_LOGO]   = {"assets/Menus/MainMenu/sheets/logo.png", 1443, 935, 0, 0, true},
+    [TEX_MAINMENU_NBUTTON] = {"assets/Menus/MainMenu/sheets/boton_normal.png", 1340, 258, 0, 0, true},
+    [TEX_MAINMENU_HBUTTON] = {"assets/Menus/MainMenu/sheets/boton_hover.png", 1244, 242, 0, 0, true},
+
+    [TEX_MAINMENU_TEXT_CONFIGURACION] = {"assets/Menus/MainMenu/split/textos_configuracion_es.png", 1032, 183, 0, 0, true},
+    [TEX_MAINMENU_TEXT_CONFIGURATION] = {"assets/Menus/MainMenu/split/textos_configuracion_en.png", 1018, 183, 0, 0, true},
+    [TEX_MAINMENU_TEXT_KONFIGURAZIOA] = {"assets/Menus/MainMenu/split/textos_configuracion_eu.png", 1027, 182, 0, 0, true},
+
+    [TEX_MAINMENU_TEXT_JUGAR]   = {"assets/Menus/MainMenu/split/textos_jugar_play_jolastu_es.png", 653, 227, 0, 0, true},
+    [TEX_MAINMENU_TEXT_PLAY]    = {"assets/Menus/MainMenu/split/textos_jugar_play_jolastu_en.png", 459, 222, 0, 0, true},
+    [TEX_MAINMENU_TEXT_JOLASTU] = {"assets/Menus/MainMenu/split/textos_jugar_play_jolastu_eu.png", 745, 194, 0, 0, true},
+
+    [TEX_MAINMENU_TEXT_SALIR] = {"assets/Menus/MainMenu/split/textos_salir_es.png", 1138, 196, 0, 0, true},
+    [TEX_MAINMENU_TEXT_EXIT]  = {"assets/Menus/MainMenu/split/textos_salir_en.png", 928, 191, 0, 0, true},
+    [TEX_MAINMENU_TEXT_ITXI]  = {"assets/Menus/MainMenu/split/textos_salir_eu.png", 826, 193, 0, 0, true},
 };
 
 static TextureAsset textures[TEX_COUNT];
@@ -38,6 +57,10 @@ void texture_load_all(void){
                 textures[i] = textures[TEX_NONE];
             }
         } else {
+            //Set mode for bigger ahh textures so they don't look weird.
+            if (texture_defs[i].smooth) {
+                SetTextureFilter(textures[i].texture, TEXTURE_FILTER_BILINEAR);
+            }
 
             textures[i].frame_w = texture_defs[i].frame_w;
             textures[i].frame_h = texture_defs[i].frame_h;

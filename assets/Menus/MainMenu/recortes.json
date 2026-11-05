@@ -1,0 +1,156 @@
+{
+  "background.png": {
+    "nota": "sin alpha, se copia tal cual",
+    "tamano": [
+      1672,
+      941
+    ]
+  },
+  "boton_hover.png": {
+    "recortado": [
+      1244,
+      242
+    ],
+    "origen_del_recorte_en_canvas": [
+      214,
+      350
+    ]
+  },
+  "boton_normal.png": {
+    "recortado": [
+      1340,
+      258
+    ],
+    "origen_del_recorte_en_canvas": [
+      167,
+      340
+    ]
+  },
+  "logo.png": {
+    "recortado": [
+      1443,
+      935
+    ],
+    "origen_del_recorte_en_canvas": [
+      123,
+      0
+    ]
+  },
+  "textos_configuracion.png": {
+    "sheet_recortado": [
+      1032,
+      655
+    ],
+    "origen_del_recorte_en_canvas": [
+      321,
+      159
+    ],
+    "filas": [
+      {
+        "idioma": "es",
+        "srcrec_en_sheet": [
+          0,
+          2,
+          1032,
+          179
+        ]
+      },
+      {
+        "idioma": "en",
+        "srcrec_en_sheet": [
+          0,
+          233,
+          1032,
+          179
+        ]
+      },
+      {
+        "idioma": "eu",
+        "srcrec_en_sheet": [
+          0,
+          475,
+          1032,
+          178
+        ]
+      }
+    ]
+  },
+  "textos_jugar_play_jolastu.png": {
+    "sheet_recortado": [
+      745,
+      724
+    ],
+    "origen_del_recorte_en_canvas": [
+      467,
+      124
+    ],
+    "filas": [
+      {
+        "idioma": "es",
+        "srcrec_en_sheet": [
+          0,
+          2,
+          745,
+          223
+        ]
+      },
+      {
+        "idioma": "en",
+        "srcrec_en_sheet": [
+          0,
+          268,
+          745,
+          218
+        ]
+      },
+      {
+        "idioma": "eu",
+        "srcrec_en_sheet": [
+          0,
+          532,
+          745,
+          190
+        ]
+      }
+    ]
+  },
+  "textos_salir.png": {
+    "sheet_recortado": [
+      1138,
+      690
+    ],
+    "origen_del_recorte_en_canvas": [
+      269,
+      151
+    ],
+    "filas": [
+      {
+        "idioma": "es",
+        "srcrec_en_sheet": [
+          0,
+          2,
+          1138,
+          192
+        ]
+      },
+      {
+        "idioma": "en",
+        "srcrec_en_sheet": [
+          0,
+          252,
+          1138,
+          187
+        ]
+      },
+      {
+        "idioma": "eu",
+        "srcrec_en_sheet": [
+          0,
+          499,
+          1138,
+          189
+        ]
+      }
+    ]
+  }
+}

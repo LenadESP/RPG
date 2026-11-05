@@ -1,9 +1,8 @@
 #ifndef MAP_H
 #define MAP_H
 
-#define TILE_SIZE 16
-
 #include "texture.h"
+#include "defines.h"
 #include <stdbool.h>
 
 typedef struct LayerDef {

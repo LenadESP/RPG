@@ -7,14 +7,10 @@
 #include "texture.h"
 #include "map.h"
 
+#include "defines.h"
+
 #include <stdlib.h>
 #include <stdbool.h>
-
-//Defining basic variables for the game.
-#define TICK_RATE 60
-#define FRAME_RATE 60
-#define MAX_FRAMETIME 0.25
-#define MAX_ENTITIES 256
 
 static void toggle_fullscreen(void);
 static void game_shutdown(void);
@@ -130,7 +126,7 @@ int main(void) {
         //Careful with the order: It's layered
 
         BeginDrawing();
-        ClearBackground(RAYWHITE);
+        ClearBackground(BLACK);
         
         //Update camera
         camera_update(&camera, player, map_w, map_h);
