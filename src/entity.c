@@ -6,7 +6,7 @@
 
 #include <math.h>
 
-/* ── tile collision helpers ─────────────────────────────────────────── */
+//Tile collision helpers
 
 typedef struct TileRange {
     int first_x;
@@ -15,17 +15,9 @@ typedef struct TileRange {
     int last_y;
 } TileRange;
 
-/* The range of map cells a hitbox overlaps.
-   It can include one extra row or column when an edge of the box lands
-   exactly on a cell border. That is harmless: CheckCollisionRecs uses
-   strict inequalities, so a cell that is merely touched gets discarded
-   by the overlap test later on. */
 static TileRange tiles_under(Rectangle box) {
     TileRange range;
 
-    /* floorf before the cast: casting a negative float to int truncates
-       toward zero, which would pick the wrong cell at negative
-       coordinates. */
     range.first_x = (int)floorf(box.x / TILE_SIZE);
     range.last_x  = (int)floorf((box.x + box.width) / TILE_SIZE);
     range.first_y = (int)floorf(box.y / TILE_SIZE);
@@ -41,12 +33,6 @@ static Rectangle tile_rect(int tile_x, int tile_y) {
                         (float)TILE_SIZE };
 }
 
-/* Pushes the entity out of any solid cell it landed in after moving along
-   X. Call only when dx is not zero.
-
-   The cell range is computed once, before any snapping. That holds because
-   an entity moves far less than one tile per tick (130 px/s at 60 ticks is
-   about 2.2 px against a 16 px tile), so it can never skip a cell. */
 static void resolve_tiles_x(Entity *e, const Map *map, float dx) {
     Rectangle box = collision_rect(e);
     TileRange range = tiles_under(box);
@@ -90,7 +76,7 @@ static void resolve_tiles_y(Entity *e, const Map *map, float dy) {
     }
 }
 
-/* ── entity ─────────────────────────────────────────────────────────── */
+//Entity
 
 void entity_update(Entity *e, float dx, float dy, float dt,
                    Entity *entities, int count, const Map *map) {
@@ -113,9 +99,6 @@ void entity_update(Entity *e, float dx, float dy, float dt,
             else           e->x = other.x + other.width + e->hb_w / 2.0f;
         }
 
-        /* Tiles go last on purpose: the map is immovable, so when an
-           entity is squeezed between a pushable entity and a wall, the
-           wall is the one that wins. */
         resolve_tiles_x(e, map, dx);
     }
 

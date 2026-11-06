@@ -23,10 +23,6 @@ void game_menu_draw(void (*start_game)(void), void (*close_game)(void)){
         [4] = {TEX_MAINMENU_NBUTTON, {576.0f, 780.0f,  520.0f, 100.0f}, true, TEX_MAINMENU_HBUTTON},
     };
 
-
-    /* area is the BOX the label is centered in: same rect as its plaque.
-       Actual size is worked out at draw time, because each language's
-       word has its own width. */
     static const CanvasElementText UITexts[] = {
         [0] = {{576.0f, 520.0f, 520.0f, 100.0f}, true, {
                    [LANG_ES] = TEX_MAINMENU_TEXT_JUGAR,
@@ -44,7 +40,7 @@ void game_menu_draw(void (*start_game)(void), void (*close_game)(void)){
                    [LANG_EU] = TEX_MAINMENU_TEXT_ITXI}},
     };
 
-        // Mouse comes in screen space. Undo the transform so it speaks canvas and
+    // Mouse comes in screen space. Undo the transform so it speaks canvas and
     // every rect in the tables can be used as written.
     // Subtract the offset FIRST, then divide.
     Vector2 mouse = GetMousePosition();
@@ -53,7 +49,7 @@ void game_menu_draw(void (*start_game)(void), void (*close_game)(void)){
     for (int i = 0; i < (int)(sizeof(UIElements) / sizeof(UIElements[0])); i++) {
         const CanvasElement *element = &UIElements[i];
         bool hovered = element->hover_effect && CheckCollisionPointRec(mouse_canvas, element->area);
-        TextureAsset asset = texture_get(hovered ? element->hover_texture : element->normal_texture);
+        TextureAsset asset = texture_get(hovered ? element->hover_texture : element->normal_texture); //get either the normal or hovered texture
 
         DrawTexturePro(asset.texture,
                        (Rectangle){0, 0, asset.frame_w, asset.frame_h},
@@ -101,12 +97,95 @@ void game_menu_draw(void (*start_game)(void), void (*close_game)(void)){
 
 }
 
-void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *camera, const Map *map){
+void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *camera, const Map *map,
+                     void (*resume_game)(void), void (*exit_to_menu)(void)){
     game_draw(entities, count, debug, camera, map);
 
-    int size = 40;
-    const char *txt = "Paused! Press ESC to resume";
-    DrawText(txt, GetScreenWidth()/2 - MeasureText(txt, size)/2, 500, size, BLACK);    
+    //Tint over the whole window, outside BeginMode2D
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.6f));
+
+    //Canvas scaling
+    float scale_x = (float)GetScreenWidth()  / CANVAS_WIDTH;
+    float scale_y = (float)GetScreenHeight() / CANVAS_HEIGHT;
+    float scale   = (scale_x < scale_y) ? scale_x : scale_y;
+
+    float offset_x = (GetScreenWidth()  - CANVAS_WIDTH * scale) / 2.0f;
+    float offset_y = (GetScreenHeight() - CANVAS_HEIGHT * scale) / 2.0f;
+
+    //No logo here, so the plaques sit centered
+    static const CanvasElement UIElements[] = {
+        [0] = {TEX_MAINMENU_NBUTTON, {576.0f, 290.0f, 520.0f, 100.0f}, true, TEX_MAINMENU_HBUTTON},
+        [1] = {TEX_MAINMENU_NBUTTON, {576.0f, 420.0f, 520.0f, 100.0f}, true, TEX_MAINMENU_HBUTTON},
+        [2] = {TEX_MAINMENU_NBUTTON, {576.0f, 550.0f, 520.0f, 100.0f}, true, TEX_MAINMENU_HBUTTON},
+    };
+
+    //TEX_NONE: resume and exit-to-menu art doesn't exist yet
+    static const CanvasElementText UITexts[] = {
+        [0] = {{576.0f, 290.0f, 520.0f, 100.0f}, true, {
+                   [LANG_ES] = TEX_MAINMENU_TEXT_VOLVER_AL_JUEGO,
+                   [LANG_EN] = TEX_MAINMENU_TEXT_RESUME,
+                   [LANG_EU] = TEX_MAINMENU_TEXT_ITZULI_JOKURA}},
+
+        [1] = {{576.0f, 420.0f, 520.0f, 100.0f}, true, {
+                   [LANG_ES] = TEX_MAINMENU_TEXT_CONFIGURACION,
+                   [LANG_EN] = TEX_MAINMENU_TEXT_CONFIGURATION,
+                   [LANG_EU] = TEX_MAINMENU_TEXT_KONFIGURAZIOA}},
+
+        [2] = {{576.0f, 550.0f, 520.0f, 100.0f}, true, {
+                   [LANG_ES] = TEX_MAINMENU_TEXT_VOLVER_AL_MENU,
+                   [LANG_EN] = TEX_MAINMENU_TEXT_MENU,
+                   [LANG_EU] = TEX_MAINMENU_TEXT_ITZULI_MENURA}},
+    };
+
+    //Mouse to canvas space
+    Vector2 mouse = GetMousePosition();
+    Vector2 mouse_canvas = {(mouse.x - offset_x) / scale, (mouse.y - offset_y) / scale};
+
+    for (int i = 0; i < (int)(sizeof(UIElements) / sizeof(UIElements[0])); i++) {
+        const CanvasElement *element = &UIElements[i];
+        bool hovered = element->hover_effect && CheckCollisionPointRec(mouse_canvas, element->area);
+        TextureAsset asset = texture_get(hovered ? element->hover_texture : element->normal_texture);
+
+        DrawTexturePro(asset.texture,
+                       (Rectangle){0, 0, asset.frame_w, asset.frame_h},
+                       canvas_to_screen(element->area, scale, offset_x, offset_y),
+                       (Vector2){0, 0}, 0, WHITE);
+    }
+
+    //TODO: comes from the translation system
+    Language current_language = LANG_ES;
+
+    for (int i = 0; i < (int)(sizeof(UITexts) / sizeof(UITexts[0])); i++) {
+        const CanvasElementText *label = &UITexts[i];
+
+        TextureId label_id = label->translated ? label->textures[current_language]
+                                               : label->textures[LANG_ES];
+        TextureAsset asset = texture_get(label_id);
+
+        //Fixed height, width from the texture's ratio
+        float label_h = MENU_TEXT_HEIGHT;
+        float label_w = label_h * asset.frame_w / asset.frame_h;
+
+        Rectangle label_area = {label->area.x + (label->area.width  - label_w) / 2.0f,
+                                label->area.y + (label->area.height - label_h) / 2.0f,
+                                label_w, label_h};
+
+        DrawTexturePro(asset.texture,
+                       (Rectangle){0, 0, asset.frame_w, asset.frame_h},
+                       canvas_to_screen(label_area, scale, offset_x, offset_y),
+                       (Vector2){0, 0}, 0, WHITE);
+    }
+
+    //Click handling. Careful: indices must match the table above
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        if (CheckCollisionPointRec(mouse_canvas, UIElements[0].area)) {
+            resume_game();
+        } else if (CheckCollisionPointRec(mouse_canvas, UIElements[1].area)) {
+            //CONFIG: nothing yet
+        } else if (CheckCollisionPointRec(mouse_canvas, UIElements[2].area)) {
+            exit_to_menu();
+        }
+    }
 }
 
 void game_draw(const Entity *entities, int count, bool debug, Camera2D *camera, const Map *map){
@@ -114,7 +193,12 @@ void game_draw(const Entity *entities, int count, bool debug, Camera2D *camera, 
 
     map_draw(map, 0, map->layer_cut);
     
-    for (int i = 0; i < count; i++) {
+    //Draw the player first
+    if(entities[0].active){
+        entity_draw(&entities[0]);
+    }
+
+    for (int i = 1; i < count; i++) {
         if (!entities[i].active) continue;
 
         entity_draw(&entities[i]);

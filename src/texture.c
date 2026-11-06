@@ -27,17 +27,25 @@ static const TextureDef texture_defs[TEX_COUNT] = {
     [TEX_MAINMENU_NBUTTON] = {"assets/Menus/MainMenu/sheets/boton_normal.png", 1340, 258, 0, 0, true},
     [TEX_MAINMENU_HBUTTON] = {"assets/Menus/MainMenu/sheets/boton_hover.png", 1244, 242, 0, 0, true},
 
-    [TEX_MAINMENU_TEXT_CONFIGURACION] = {"assets/Menus/MainMenu/split/textos_configuracion_es.png", 1032, 183, 0, 0, true},
-    [TEX_MAINMENU_TEXT_CONFIGURATION] = {"assets/Menus/MainMenu/split/textos_configuracion_en.png", 1018, 183, 0, 0, true},
-    [TEX_MAINMENU_TEXT_KONFIGURAZIOA] = {"assets/Menus/MainMenu/split/textos_configuracion_eu.png", 1027, 182, 0, 0, true},
+        [TEX_MAINMENU_TEXT_CONFIGURACION] = {"assets/Menus/MainMenu/split/textos_configuracion_es.png", 889, 168, 0, 0, true},
+    [TEX_MAINMENU_TEXT_CONFIGURATION] = {"assets/Menus/MainMenu/split/textos_configuracion_en.png", 858, 168, 0, 0, true},
+    [TEX_MAINMENU_TEXT_KONFIGURAZIOA] = {"assets/Menus/MainMenu/split/textos_configuracion_eu.png", 884, 168, 0, 0, true},
 
-    [TEX_MAINMENU_TEXT_JUGAR]   = {"assets/Menus/MainMenu/split/textos_jugar_play_jolastu_es.png", 653, 227, 0, 0, true},
-    [TEX_MAINMENU_TEXT_PLAY]    = {"assets/Menus/MainMenu/split/textos_jugar_play_jolastu_en.png", 459, 222, 0, 0, true},
-    [TEX_MAINMENU_TEXT_JOLASTU] = {"assets/Menus/MainMenu/split/textos_jugar_play_jolastu_eu.png", 745, 194, 0, 0, true},
+    [TEX_MAINMENU_TEXT_JUGAR]   = {"assets/Menus/MainMenu/split/textos_jugar_play_jolastu_es.png", 419, 168, 0, 0, true},
+    [TEX_MAINMENU_TEXT_PLAY]    = {"assets/Menus/MainMenu/split/textos_jugar_play_jolastu_en.png", 309, 168, 0, 0, true},
+    [TEX_MAINMENU_TEXT_JOLASTU] = {"assets/Menus/MainMenu/split/textos_jugar_play_jolastu_eu.png", 502, 168, 0, 0, true},
 
-    [TEX_MAINMENU_TEXT_SALIR] = {"assets/Menus/MainMenu/split/textos_salir_es.png", 1138, 196, 0, 0, true},
-    [TEX_MAINMENU_TEXT_EXIT]  = {"assets/Menus/MainMenu/split/textos_salir_en.png", 928, 191, 0, 0, true},
-    [TEX_MAINMENU_TEXT_ITXI]  = {"assets/Menus/MainMenu/split/textos_salir_eu.png", 826, 193, 0, 0, true},
+    [TEX_MAINMENU_TEXT_SALIR] = {"assets/Menus/MainMenu/split/textos_salir_es.png", 925, 168, 0, 0, true},
+    [TEX_MAINMENU_TEXT_EXIT]  = {"assets/Menus/MainMenu/split/textos_salir_en.png", 741, 168, 0, 0, true},
+    [TEX_MAINMENU_TEXT_ITXI]  = {"assets/Menus/MainMenu/split/textos_salir_eu.png", 680, 168, 0, 0, true},
+
+    [TEX_MAINMENU_TEXT_VOLVER_AL_JUEGO] = {"assets/Menus/MainMenu/split/textos_volver_al_juego_es.png", 809, 168, 0, 0, true},
+    [TEX_MAINMENU_TEXT_RESUME]          = {"assets/Menus/MainMenu/split/textos_resume_en.png", 490, 168, 0, 0, true},
+    [TEX_MAINMENU_TEXT_ITZULI_JOKURA]   = {"assets/Menus/MainMenu/split/textos_jokura_itzuli_eu.png", 770, 168, 0, 0, true},
+
+    [TEX_MAINMENU_TEXT_VOLVER_AL_MENU] = {"assets/Menus/MainMenu/split/textos_salir_al_menu_es.png", 765, 168, 0, 0, true},
+    [TEX_MAINMENU_TEXT_MENU]           = {"assets/Menus/MainMenu/split/textos_exit_to_menu_en.png", 742, 168, 0, 0, true},
+    [TEX_MAINMENU_TEXT_ITZULI_MENURA]  = {"assets/Menus/MainMenu/split/textos_menura_itzuli_eu.png", 758, 168, 0, 0, true},
 };
 
 static TextureAsset textures[TEX_COUNT];

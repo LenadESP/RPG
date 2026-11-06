@@ -14,8 +14,14 @@
 
 static void toggle_fullscreen(void);
 static void game_shutdown(void);
-static void start_game(void);
-static void close_game();
+
+//state functions
+static void set_playing(void);
+static void set_paused(void);
+static void set_menu(void);
+static void close_game(void);
+
+//NOTICE: close game and game shutdown are NOT the same. close game just sends the closing signal, and game shutdown handles the actual logic.
 
 static double accumulator = 0.0;
 static double lastTime = 0.0;
@@ -93,12 +99,10 @@ int main(void) {
 
         //Game pause
         if (ui_input.pause_game && game_state == GAME_PLAYING){
-            game_state = GAME_PAUSED;
+            set_paused();
         
         } else if (ui_input.pause_game && game_state == GAME_PAUSED){
-            lastTime = GetTime();
-            accumulator = 0;
-            game_state = GAME_PLAYING;
+            set_playing();
         }
 
         //Accumulator's logic
@@ -130,7 +134,7 @@ int main(void) {
 
         switch (game_state) {
             case GAME_MENU: {
-                game_menu_draw(start_game, close_game);
+                game_menu_draw(set_playing, close_game);
                 break;
             }
 
@@ -140,7 +144,7 @@ int main(void) {
             }
             
             case GAME_PAUSED: {
-                game_pause_draw(entities, MAX_ENTITIES, debug, &camera, &map);
+                game_pause_draw(entities, MAX_ENTITIES, debug, &camera, &map, set_playing, set_menu);
                 break;
             }
         }   
@@ -182,8 +186,19 @@ void game_shutdown(void){
 void close_game(void){
     shouldCloseGame = true;
 }
-void start_game(void){
+
+void set_playing(void){
     lastTime = GetTime();
     accumulator = 0;
     game_state = GAME_PLAYING;
+}
+void set_paused(void){
+    lastTime = GetTime();
+    accumulator = 0;
+    game_state = GAME_PAUSED;
+}
+void set_menu(void){
+    lastTime = GetTime();
+    accumulator = 0;
+    game_state = GAME_MENU;
 }

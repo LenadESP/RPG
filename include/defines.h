@@ -27,6 +27,6 @@
 //TAKEN FROM ----- GAME.C -----
 #define CANVAS_WIDTH 1672
 #define CANVAS_HEIGHT 941
-#define MENU_TEXT_HEIGHT 50.0f
+#define MENU_TEXT_HEIGHT 66.0f
 
 #endif
