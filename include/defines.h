@@ -25,7 +25,8 @@
 #define TILE_SIZE 16
 
 //TAKEN FROM ----- GAME.C -----
-#define CANVAS_W 1672
-#define CANVAS_H 941
+#define CANVAS_WIDTH 1672
+#define CANVAS_HEIGHT 941
+#define MENU_TEXT_HEIGHT 50.0f
 
 #endif

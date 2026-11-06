@@ -14,12 +14,21 @@
 
 static void toggle_fullscreen(void);
 static void game_shutdown(void);
+static void start_game(void);
+static void close_game();
+
+static double accumulator = 0.0;
+static double lastTime = 0.0;
+static bool shouldCloseGame = false;
 
 typedef enum {
         GAME_MENU,      
         GAME_PLAYING,   
         GAME_PAUSED
 } GameState;
+
+//Set the initial screen state to be the menu
+static GameState game_state = GAME_MENU;
 
 int main(void) {
     //Initialize some variables
@@ -46,12 +55,7 @@ int main(void) {
     entities[0] = player_init();
     Entity *player = &entities[0];
 
-    //Set the initial screen state to be the menu
-    GameState game_state = GAME_MENU;
-
     //Accumulator
-    double accumulator = 0.0;
-    double lastTime = 0.0;
     const float TICK_DURATION = 1.0 / TICK_RATE;
 
     //camera logic
@@ -77,7 +81,7 @@ int main(void) {
     //Reset timer
     lastTime = GetTime();
 
-    while (!WindowShouldClose()) {
+    while (!WindowShouldClose() && !shouldCloseGame) {
         input_poll_player(&player_input);
         input_poll_ui(&ui_input);
 
@@ -86,13 +90,6 @@ int main(void) {
 
         //Activate debug mode
         if (ui_input.debug_mode){debug = !debug;}
-
-        //Start game
-        if (ui_input.start_game && game_state == GAME_MENU){
-            lastTime = GetTime();
-            accumulator = 0;
-            game_state = GAME_PLAYING;
-        }
 
         //Game pause
         if (ui_input.pause_game && game_state == GAME_PLAYING){
@@ -133,7 +130,7 @@ int main(void) {
 
         switch (game_state) {
             case GAME_MENU: {
-                game_menu_draw();
+                game_menu_draw(start_game, close_game);
                 break;
             }
 
@@ -177,7 +174,16 @@ static void toggle_fullscreen(void){
     }
 }
 
-static void game_shutdown(void){
+void game_shutdown(void){
     texture_unload_all();
     CloseWindow();
+}
+
+void close_game(void){
+    shouldCloseGame = true;
+}
+void start_game(void){
+    lastTime = GetTime();
+    accumulator = 0;
+    game_state = GAME_PLAYING;
 }

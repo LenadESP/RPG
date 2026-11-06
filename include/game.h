@@ -5,7 +5,7 @@
 #include "raylib.h"
 #include "map.h"
 
-void game_menu_draw(void);
+void game_menu_draw(void (*start_game)(void), void (*close_game)(void));
 void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *camera, const Map *map);
 void game_draw(const Entity *entities, int count, bool debug, Camera2D *camera, const Map *map);
 
