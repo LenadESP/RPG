@@ -15,7 +15,6 @@ static const SoundDef sound_defs[SOUND_COUNT] = {
 static Sound sounds[SOUND_COUNT];
 
 void sound_load_all(void){
-    SetMasterVolume(get_channel_volume(CHANNEL_MASTER));
     for (int i = 0; i < SOUND_COUNT; i++) {
         sounds[i] = LoadSound(sound_defs[i].path);
 
@@ -34,6 +33,8 @@ void sound_unload_all(void){
 }
 
 void play_sound(SoundId id, float volume){
-    SetSoundVolume(sounds[id], get_channel_volume(sound_defs[id].channel));
-    PlaySound(sounds[id]);
+    if(IsSoundValid(id)){
+        SetSoundVolume(sounds[id], get_channel_volume(sound_defs[id].channel) * volume);
+        PlaySound(sounds[id]);
+    }
 }
