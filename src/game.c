@@ -3,9 +3,12 @@
 #include "raylib.h"
 #include "collision.h"
 #include "map.h"
-#include "defines.h"
 #include "texture.h"
 #include "canvas.h"
+#include "defines.h"
+
+#include <stdlib.h>
+#include <stdbool.h>
 
 void game_menu_draw(void (*start_game)(void), void (*close_game)(void)){
     float scale_x = (float)GetScreenWidth()  / CANVAS_WIDTH;
@@ -185,6 +188,42 @@ void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *ca
         } else if (CheckCollisionPointRec(mouse_canvas, UIElements[2].area)) {
             exit_to_menu();
         }
+    }
+}
+
+void game_load_draw(void (*set_menu)(void)){
+    static float elapsed = 0.0f;
+    elapsed += GetFrameTime();
+
+    float p = elapsed / LOADING_DURATION;
+    if (p > 1.0f) p = 1.0f;
+
+    //Smoothstep: starts and ends slowly
+    float eased = p * p * (3.0f - 2.0f * p);
+
+    //Alpha runs ahead of the sorting, so it finishes appearing first
+    float alpha = eased * 1.15f;
+    if (alpha > 1.0f) alpha = 1.0f;
+
+    float amount = (1.0f - eased) * LOADING_MAX_OFFSET;
+
+    float scale_x = (float)GetScreenWidth()  / CANVAS_WIDTH;
+    float scale_y = (float)GetScreenHeight() / CANVAS_HEIGHT;
+    float scale   = (scale_x < scale_y) ? scale_x : scale_y;
+
+    float offset_x = (GetScreenWidth()  - CANVAS_WIDTH * scale) / 2.0f;
+    float offset_y = (GetScreenHeight() - CANVAS_HEIGHT * scale) / 2.0f;
+
+    //Logo big and centered here. It snaps to its menu spot on the swap
+    static const Rectangle bg_area   = {  0.0f,   0.0f, 1672.0f, 941.0f};
+    static const Rectangle logo_area = {386.0f, 179.0f,  900.0f, 583.0f};
+
+    draw_glitched(TEX_MAINMENU_BG,   bg_area,   alpha, amount, scale, offset_x, offset_y);
+    draw_glitched(TEX_MAINMENU_LOGO, logo_area, alpha, amount, scale, offset_x, offset_y);
+
+    if (elapsed >= LOADING_DURATION) {
+        elapsed = 0.0f;
+        set_menu();
     }
 }
 

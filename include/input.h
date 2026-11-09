@@ -12,7 +12,7 @@ typedef struct PlayerInput {
 
 typedef struct UIInput {
     bool fullscreen;
-    bool start_game;
+    bool skip_loading;
     bool pause_game;
     bool debug_mode;
 } UIInput;

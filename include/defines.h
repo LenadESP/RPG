@@ -29,4 +29,9 @@
 #define CANVAS_HEIGHT 941
 #define MENU_TEXT_HEIGHT 66.0f
 
+#define LOADING_DURATION 3.5f
+#define LOADING_STRIPS 48
+#define LOADING_MAX_OFFSET 140.0f
+#define FADE_DURATION 0.35f
+
 #endif

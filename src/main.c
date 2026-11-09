@@ -30,11 +30,12 @@ static bool shouldCloseGame = false;
 typedef enum {
         GAME_MENU,      
         GAME_PLAYING,   
-        GAME_PAUSED
+        GAME_PAUSED,
+        GAME_LOADING
 } GameState;
 
 //Set the initial screen state to be the menu
-static GameState game_state = GAME_MENU;
+static GameState game_state = GAME_LOADING;
 
 int main(void) {
     //Initialize some variables
@@ -97,6 +98,10 @@ int main(void) {
         //Activate debug mode
         if (ui_input.debug_mode){debug = !debug;}
 
+        if(ui_input.skip_loading && game_state == GAME_LOADING){
+            set_menu();
+        }
+
         //Game pause
         if (ui_input.pause_game && game_state == GAME_PLAYING){
             set_paused();
@@ -146,6 +151,9 @@ int main(void) {
             case GAME_PAUSED: {
                 game_pause_draw(entities, MAX_ENTITIES, debug, &camera, &map, set_playing, set_menu);
                 break;
+            }
+            case GAME_LOADING: {
+                game_load_draw(set_menu);
             }
         }   
 

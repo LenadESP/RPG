@@ -21,5 +21,7 @@ typedef struct CanvasElementText{
 } CanvasElementText;
 
 Rectangle canvas_to_screen(Rectangle area, float scale, float offset_x, float offset_y);
+void draw_glitched (TextureId id, Rectangle area, float alpha, float amount, float scale, float offset_x, float offset_y);
+
 
 #endif
