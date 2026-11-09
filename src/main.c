@@ -6,6 +6,7 @@
 #include "camera.h"
 #include "texture.h"
 #include "map.h"
+#include "sound.h"
 
 #include "defines.h"
 
@@ -71,6 +72,7 @@ int main(void) {
     //Start window
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
     InitWindow(1280, 720, "RPG Game!"); //16:9
+    InitAudioDevice();
     SetExitKey(KEY_NULL);
     SetTargetFPS(FRAME_RATE);
 
@@ -79,6 +81,7 @@ int main(void) {
 
     //Load all textures. This is where a loading screen would come in handy.
     texture_load_all();
+    sound_load_all();
     map_load(&map, camino_sur_layers, sizeof(camino_sur_layers) / sizeof(camino_sur_layers[0]), 4, collision_path);
 
     //Calculate map height and width in pixels
@@ -188,6 +191,9 @@ static void toggle_fullscreen(void){
 
 void game_shutdown(void){
     texture_unload_all();
+    sound_unload_all();
+
+    CloseAudioDevice();
     CloseWindow();
 }
 
