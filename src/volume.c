@@ -1,5 +1,7 @@
 #include "volume.h"
 
+#include "raylib.h"
+
 static float volumes[CHANNEL_COUNT] = {
     [CHANNEL_MASTER] = 1.0f,
     [CHANNEL_MUSIC] = 1.0f,

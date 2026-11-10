@@ -33,7 +33,7 @@ void sound_unload_all(void){
 }
 
 void play_sound(SoundId id, float volume){
-    if(IsSoundValid(id)){
+    if(IsSoundValid(sounds[id])){
         SetSoundVolume(sounds[id], get_channel_volume(sound_defs[id].channel) * volume);
         PlaySound(sounds[id]);
     }
