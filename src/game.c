@@ -6,6 +6,7 @@
 #include "texture.h"
 #include "canvas.h"
 #include "defines.h"
+#include "sound.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -49,16 +50,28 @@ void game_menu_draw(void (*start_game)(void), void (*close_game)(void)){
     Vector2 mouse = GetMousePosition();
     Vector2 mouse_canvas = {(mouse.x - offset_x) / scale, (mouse.y - offset_y) / scale};
 
+    // Edge detection for the hover sound. Survives leaving and re-entering the menu
+    static int last_hovered = -1;
+    int hovered_now = -1;
+
     for (int i = 0; i < (int)(sizeof(UIElements) / sizeof(UIElements[0])); i++) {
         const CanvasElement *element = &UIElements[i];
         bool hovered = element->hover_effect && CheckCollisionPointRec(mouse_canvas, element->area);
         TextureAsset asset = texture_get(hovered ? element->hover_texture : element->normal_texture); //get either the normal or hovered texture
+
+        if (hovered) hovered_now = i;
 
         DrawTexturePro(asset.texture,
                        (Rectangle){0, 0, asset.frame_w, asset.frame_h},
                        canvas_to_screen(element->area, scale, offset_x, offset_y),
                        (Vector2){0, 0}, 0, WHITE);
     }
+
+    // Only on the leading edge: entering a different plaque than last frame
+    if (hovered_now != last_hovered && hovered_now != -1) {
+        play_sound(SOUND_UI_HOVER, 0.4f);
+    }
+    last_hovered = hovered_now;
 
     // TODO: this comes from the translation system (card 32) once it exists.
     Language current_language = LANG_ES;
@@ -90,6 +103,7 @@ void game_menu_draw(void (*start_game)(void), void (*close_game)(void)){
     // If you reorder that table, these indices lie and nothing warns you.
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         if (CheckCollisionPointRec(mouse_canvas, UIElements[2].area)) {
+            play_sound(SOUND_UI_ACCEPT, 0.4f);
             start_game();
         } else if (CheckCollisionPointRec(mouse_canvas, UIElements[3].area)) {
             // CONFIG: nothing yet
@@ -122,7 +136,6 @@ void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *ca
         [2] = {TEX_MAINMENU_NBUTTON, {576.0f, 550.0f, 520.0f, 100.0f}, true, TEX_MAINMENU_HBUTTON},
     };
 
-    //TEX_NONE: resume and exit-to-menu art doesn't exist yet
     static const CanvasElementText UITexts[] = {
         [0] = {{576.0f, 290.0f, 520.0f, 100.0f}, true, {
                    [LANG_ES] = TEX_MAINMENU_TEXT_VOLVER_AL_JUEGO,
@@ -144,16 +157,27 @@ void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *ca
     Vector2 mouse = GetMousePosition();
     Vector2 mouse_canvas = {(mouse.x - offset_x) / scale, (mouse.y - offset_y) / scale};
 
+    //Its own edge state: this menu's indices are not the main menu's
+    static int last_hovered = -1;
+    int hovered_now = -1;
+
     for (int i = 0; i < (int)(sizeof(UIElements) / sizeof(UIElements[0])); i++) {
         const CanvasElement *element = &UIElements[i];
         bool hovered = element->hover_effect && CheckCollisionPointRec(mouse_canvas, element->area);
         TextureAsset asset = texture_get(hovered ? element->hover_texture : element->normal_texture);
+
+        if (hovered) hovered_now = i;
 
         DrawTexturePro(asset.texture,
                        (Rectangle){0, 0, asset.frame_w, asset.frame_h},
                        canvas_to_screen(element->area, scale, offset_x, offset_y),
                        (Vector2){0, 0}, 0, WHITE);
     }
+
+    if (hovered_now != last_hovered && hovered_now != -1) {
+        play_sound(SOUND_UI_HOVER, 0.4f);
+    }
+    last_hovered = hovered_now;
 
     //TODO: comes from the translation system
     Language current_language = LANG_ES;
@@ -182,10 +206,12 @@ void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *ca
     //Click handling. Careful: indices must match the table above
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         if (CheckCollisionPointRec(mouse_canvas, UIElements[0].area)) {
+            play_sound(SOUND_UI_ACCEPT, 0.4f);
             resume_game();
         } else if (CheckCollisionPointRec(mouse_canvas, UIElements[1].area)) {
             //CONFIG: nothing yet
         } else if (CheckCollisionPointRec(mouse_canvas, UIElements[2].area)) {
+            play_sound(SOUND_UI_CANCEL, 0.4f);
             exit_to_menu();
         }
     }
@@ -231,11 +257,6 @@ void game_draw(const Entity *entities, int count, bool debug, Camera2D *camera, 
     BeginMode2D(*camera);
 
     map_draw(map, 0, map->layer_cut);
-    
-    //Draw the player first
-    if(entities[0].active){
-        entity_draw(&entities[0]);
-    }
 
     for (int i = 1; i < count; i++) {
         if (!entities[i].active) continue;
@@ -246,6 +267,11 @@ void game_draw(const Entity *entities, int count, bool debug, Camera2D *camera, 
         if(debug){
             DrawRectangleLinesEx(collision_rect(&entities[i]), 1, YELLOW);
         }
+    }
+
+    //Draw the player last
+    if(entities[0].active){
+        entity_draw(&entities[0]);
     }
 
     map_draw(map, map->layer_cut, map->layer_amount);

@@ -9,7 +9,9 @@ typedef struct {
 } SoundDef;
 
 static const SoundDef sound_defs[SOUND_COUNT] = {
-    [SOUND_UI_ACCEPT] = {"assets/Audio/Sounds/Menu/Accept.wav", CHANNEL_UI}
+    [SOUND_UI_ACCEPT] = {"assets/Audio/Sounds/Menu/Accept3.wav", CHANNEL_UI},
+    [SOUND_UI_CANCEL] = {"assets/Audio/Sounds/Menu/Cancel2.wav", CHANNEL_UI},
+    [SOUND_UI_HOVER] = {"assets/Audio/Sounds/Menu/Move1.wav", CHANNEL_UI}
 };
 
 static Sound sounds[SOUND_COUNT];

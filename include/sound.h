@@ -3,6 +3,8 @@
 
 typedef enum {
     SOUND_UI_ACCEPT,
+    SOUND_UI_CANCEL,
+    SOUND_UI_HOVER,
     SOUND_COUNT
 } SoundId;
 

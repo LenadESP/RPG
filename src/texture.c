@@ -27,7 +27,7 @@ static const TextureDef texture_defs[TEX_COUNT] = {
     [TEX_MAINMENU_NBUTTON] = {"assets/Menus/MainMenu/sheets/boton_normal.png", 1340, 258, 0, 0, true},
     [TEX_MAINMENU_HBUTTON] = {"assets/Menus/MainMenu/sheets/boton_hover.png", 1244, 242, 0, 0, true},
 
-        [TEX_MAINMENU_TEXT_CONFIGURACION] = {"assets/Menus/MainMenu/split/textos_configuracion_es.png", 889, 168, 0, 0, true},
+    [TEX_MAINMENU_TEXT_CONFIGURACION] = {"assets/Menus/MainMenu/split/textos_configuracion_es.png", 889, 168, 0, 0, true},
     [TEX_MAINMENU_TEXT_CONFIGURATION] = {"assets/Menus/MainMenu/split/textos_configuracion_en.png", 858, 168, 0, 0, true},
     [TEX_MAINMENU_TEXT_KONFIGURAZIOA] = {"assets/Menus/MainMenu/split/textos_configuracion_eu.png", 884, 168, 0, 0, true},
 
