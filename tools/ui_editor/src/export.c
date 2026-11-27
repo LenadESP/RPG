@@ -66,23 +66,20 @@ static bool used_by(const Layout *l, int tex) {
     for (int i = 0; i < l->count; i++) {
         const Item *it = &l->items[i];
         if (it->kind == ITEM_IMAGE && (it->tex == tex || (it->clickable && it->hover_tex == tex))) return true;
-        if (it->kind == ITEM_TEXT)
-            for (int k = 0; k < MAX_LANGS; k++) if (it->lang_tex[k] == tex) return true;
     }
     return false;
 }
 
-// The label sitting exactly on a button, by its first language: "JUGAR".
+// The label sitting exactly on a button, by its id: "PLAY".
 void export_button_label(const Project *p, const Layout *l, int item, char *out, int size) {
     out[0] = 0;
     for (int k = 0; k < l->count; k++) {
         const Item *t = &l->items[k];
-        if (t->kind != ITEM_TEXT || t->lang_tex[0] < 0) continue;
+        if (t->kind != ITEM_TEXT || t->text < 0) continue;
         const Rectangle a = t->area, b = l->items[item].area;
         if (a.x != b.x || a.y != b.y || a.width != b.width || a.height != b.height) continue;
-        const char *n = p->tex[t->lang_tex[0]].name;
-        const char *cut = strstr(n, "_TEXT_");
-        snprintf(out, size, "%s", cut ? cut + 6 : (strncmp(n, "TEX_", 4) == 0 ? n + 4 : n));
+        const char *n = p->texts[t->text].name;
+        snprintf(out, size, "%s", strncmp(n, "TXT_", 4) == 0 ? n + 4 : n);
         return;
     }
 }
@@ -209,19 +206,12 @@ void export_blocks(const Project *p, const Screen *s, const Layout *l,
             if (it->kind != ITEM_TEXT) continue;
             bprintf(&rb, "        [%d] = {", idx);
             put_rect(&rb, &rt[i], widths);
-            bprintf(&rb, ", %s, {", it->translated ? "true" : "false");
-
-            // Untranslated labels only ever read index 0, so only that one is written.
-            int last = it->translated ? p->lang_count - 1 : 0, written = 0;
-            for (int k = 0; k <= last; k++) {
-                if (it->lang_tex[k] < 0) {
-                    bprintf(&wb, "! %s[%d] has no texture for %s (the game will draw TEX_NONE)\n", text_name, idx, p->langs[k]);
-                    continue;
-                }
-                bprintf(&rb, "%s\n                   [%s] = %s", written ? "," : "", p->langs[k], p->tex[it->lang_tex[k]].name);
-                written++;
+            if (it->text >= 0) {
+                bprintf(&rb, ", %s},\n", p->texts[it->text].name);
+            } else {
+                bprintf(&rb, ", 0},\n");
+                bprintf(&wb, "! %s[%d] has no text (it will draw %s)\n", text_name, idx, p->text_count ? p->texts[0].name : "the first TextId");
             }
-            bprintf(&rb, "}},\n");
             idx++;
         }
         bprintf(&rb, "    };\n");

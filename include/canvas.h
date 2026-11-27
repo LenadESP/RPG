@@ -16,8 +16,7 @@ typedef struct CanvasElement {
 
 typedef struct CanvasElementText{
     Rectangle area;
-    bool translated;
-    TextureId textures[LANG_COUNT];
+    TextId text;
 } CanvasElementText;
 
 Rectangle canvas_to_screen(Rectangle area, float scale, float offset_x, float offset_y);

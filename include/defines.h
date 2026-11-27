@@ -27,11 +27,15 @@
 //TAKEN FROM ----- GAME.C -----
 #define CANVAS_WIDTH 1672
 #define CANVAS_HEIGHT 941
-#define MENU_TEXT_HEIGHT 66.0f
+#define MENU_TEXT_HEIGHT 48.0f
 
 #define LOADING_DURATION 3.5f
 #define LOADING_STRIPS 48
 #define LOADING_MAX_OFFSET 140.0f
 #define FADE_DURATION 0.35f
+
+//TAKEN FROM ----- TEXT.C -----
+#define FONT_LOAD_SIZE 120 //Alagard is 15px tall, so a multiple of 15 keeps its pixels square
+#define TEXT_OUTLINE_WIDTH 3.0f
 
 #endif

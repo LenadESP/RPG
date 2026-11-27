@@ -44,6 +44,7 @@ static int  grid = 1;            // canvas px. Positions snap to multiples of th
 static bool show_guides = true;
 
 static Font ui_font, mono_font;
+static Font game_font;           // the game's own, for labels
 
 // view: canvas px -> screen px is  pan + p * zoom
 static float   zoom = 0.5f;
@@ -55,11 +56,10 @@ typedef struct { char path[PATH_LEN]; Texture2D tex; bool tried; } Asset;
 static Asset *assets;
 static int    asset_count;
 
-static int  browser_tab = 0;     // 0 declared, 1 assets
-static int  browser_sel[2] = {-1, -1};
-static float browser_scroll[2];
+static int  browser_tab = 0;     // 0 declared textures, 1 assets, 2 texts (labels)
+static int  browser_sel[3] = {-1, -1, -1};
+static float browser_scroll[3];
 static char filter[128];
-static int  drop_mode = 0;       // 0 image, 1 label
 
 static float layers_scroll;
 
@@ -223,6 +223,7 @@ static void scan_assets(void) {
 // The browser's selection as a registry index, registering a new texture
 // the first time an asset png is used.
 static int browser_resolve(void) {
+    if (browser_tab == 2) return -1;
     if (browser_tab == 0) return browser_sel[0];
     int a = browser_sel[1];
     if (a < 0) return -1;
@@ -289,22 +290,33 @@ static Item new_item(ItemKind k) {
     Item it = {0};
     it.kind = k;
     it.tex = it.hover_tex = P.tex_none;
-    it.translated = true;
-    for (int l = 0; l < MAX_LANGS; l++) it.lang_tex[l] = -1;
+    it.text = -1;
     return it;
 }
 
-static int label_tex(const Item *it, int lg) {
-    int t = it->translated ? it->lang_tex[lg] : it->lang_tex[0];
-    return t < 0 ? P.tex_none : t;
+static const char *label_str(const Item *it) {
+    const char *s = text_str(&P, it->text, lang);
+    return s[0] ? s : "(no text)";
 }
 
-// Exactly what game.c does: fixed height, width from the texture, centred in area.
+static Vector2 label_size(const char *s) {
+    return MeasureTextEx(game_font, s, P.text_h, 0);
+}
+
+// Same as text_draw() in src/text.c: font size MENU_TEXT_HEIGHT, centred in area.
 static Rectangle label_rect(const Item *it) {
-    Drawn d = tex_drawn(label_tex(it, lang));
-    float h = P.text_h;
-    float w = d.fh > 0 ? h * d.fw / d.fh : h;
-    return (Rectangle){it->area.x + (it->area.width - w) / 2.0f, it->area.y + (it->area.height - h) / 2.0f, w, h};
+    Vector2 sz = label_size(label_str(it));
+    return (Rectangle){it->area.x + (it->area.width - sz.x) / 2.0f, it->area.y + (it->area.height - sz.y) / 2.0f, sz.x, sz.y};
+}
+
+static void draw_label(const char *s, Rectangle canvas_rect) {
+    Rectangle r = to_screen(canvas_rect);
+    float size = P.text_h * zoom, ow = P.text_outline * zoom;
+    Color fill = {251, 228, 168, 255}, outline = {29, 5, 28, 255};   // same as src/text.c
+    for (int dx = -1; dx <= 1; dx++)
+        for (int dy = -1; dy <= 1; dy++)
+            DrawTextEx(game_font, s, (Vector2){r.x + dx * ow, r.y + dy * ow}, size, 0, outline);
+    DrawTextEx(game_font, s, (Vector2){r.x, r.y}, size, 0, fill);
 }
 
 static Rectangle hit_rect(const Item *it) { return it->kind == ITEM_TEXT ? label_rect(it) : it->area; }
@@ -366,50 +378,52 @@ static void duplicate(int i) {
 }
 
 // Drop a texture from the browser onto the canvas.
-static void drop_texture(Vector2 c) {
-    int t = browser_resolve();
+static void drop_text(Vector2 c) {
+    int t = browser_sel[2];
     if (t < 0) return;
-    Drawn d = tex_drawn(t);
 
-    if (drop_mode == 0) {
-        Item it = new_item(ITEM_IMAGE);
-        it.tex = t;
-        float w = d.fw, h = d.fh;
-        float s = fminf(1.0f, fminf(P.canvas_w / w, P.canvas_h / h));   // never bigger than the canvas
-        w *= s; h *= s;
-        it.area = (Rectangle){snapv(c.x - w / 2), snapv(c.y - h / 2), roundf(w), roundf(h)};
-        undo_push();
-        int at = insert_item(it, -1);
-        if (at >= 0) sel = at;
-        set_status(false, "Added %s", P.tex[t].name);
-        return;
-    }
-
-    // Label onto an existing label: fill that label's slot for the language
-    // being previewed. Handy for doing ES, then EN, then EU.
+    // Onto an existing label: swap its text
     for (int i = L.count - 1; i >= 0; i--) {
         Item *it = &L.items[i];
         if (it->kind != ITEM_TEXT || !CheckCollisionPointRec(c, it->area)) continue;
         undo_push();
-        it->lang_tex[it->translated ? lang : 0] = t;
+        it->text = t;
         sel = i;
-        set_status(false, "%s -> %s of label %d", P.tex[t].name, P.langs[it->translated ? lang : 0], layout_index_of_kind(&L, i));
+        set_status(false, "Label %d is now %s", layout_index_of_kind(&L, i), P.texts[t].name);
         return;
     }
 
     Item it = new_item(ITEM_TEXT);
-    it.lang_tex[lang] = t;
+    it.text = t;
     int btn = hit_test(c, true);
     if (btn >= 0) {
         it.area = L.items[btn].area;          // snaps onto the button: same rect, as in game.c
     } else {
-        float h = P.text_h, w = d.fh > 0 ? h * d.fw / d.fh : h;
-        it.area = (Rectangle){snapv(c.x - w / 2), snapv(c.y - h / 2), roundf(w), h};
+        Vector2 sz = label_size(label_str(&it));
+        it.area = (Rectangle){snapv(c.x - sz.x / 2), snapv(c.y - sz.y / 2), roundf(sz.x), roundf(sz.y)};
     }
     undo_push();
     int at = insert_item(it, -1);
     if (at >= 0) sel = at;
     set_status(false, btn >= 0 ? "Label snapped onto UIElements[%d]" : "Added label", btn >= 0 ? layout_index_of_kind(&L, btn) : 0);
+}
+
+static void drop_texture(Vector2 c) {
+    if (browser_tab == 2) { drop_text(c); return; }
+    int t = browser_resolve();
+    if (t < 0) return;
+    Drawn d = tex_drawn(t);
+
+    Item it = new_item(ITEM_IMAGE);
+    it.tex = t;
+    float w = d.fw, h = d.fh;
+    float s = fminf(1.0f, fminf(P.canvas_w / w, P.canvas_h / h));   // never bigger than the canvas
+    w *= s; h *= s;
+    it.area = (Rectangle){snapv(c.x - w / 2), snapv(c.y - h / 2), roundf(w), roundf(h)};
+    undo_push();
+    int at = insert_item(it, -1);
+    if (at >= 0) sel = at;
+    set_status(false, "Added %s", P.tex[t].name);
 }
 
 // ─── screens ─────────────────────────────────────────────────
@@ -453,6 +467,20 @@ static int find_screen_by(const char *name, bool draft) {
     return -1;
 }
 
+// The game's font, with the same characters text.c bakes, so '?' shows up here too.
+static void load_game_font(void) {
+    if (game_font.texture.id && game_font.texture.id != GetFontDefault().texture.id) UnloadFont(game_font);
+    game_font = GetFontDefault();
+    char full[PATH_LEN * 2];
+    snprintf(full, sizeof(full), "%s/%s", P.root, P.font_path);
+    if (!P.font_path[0] || !FileExists(full)) { project_warn(&P, "can't find the game font (%s), labels use raylib's", P.font_path); return; }
+    int n = 0;
+    int *cps = LoadCodepoints(P.font_charset[0] ? P.font_charset : " ", &n);
+    game_font = LoadFontEx(full, (int)P.font_bake_size, P.font_charset[0] ? cps : NULL, P.font_charset[0] ? n : 0);
+    UnloadCodepoints(cps);
+    SetTextureFilter(game_font.texture, TEXTURE_FILTER_BILINEAR);
+}
+
 static void reload(void) {
     char name[NAME_LEN];
     bool was_draft = cur.is_draft, had = have_screen;
@@ -462,7 +490,8 @@ static void reload(void) {
     snprintf(root, sizeof(root), "%s", P.root);
     if (!project_load(&P, root)) { set_status(true, "Reload failed: can't read the game"); return; }
     scan_assets();
-    browser_sel[0] = browser_sel[1] = -1;
+    load_game_font();
+    browser_sel[0] = browser_sel[1] = browser_sel[2] = -1;
     int s = had ? find_screen_by(name, was_draft) : -1;
     if (s >= 0) open_screen(s);
     else if (had) new_screen(name);
@@ -570,7 +599,7 @@ static void left_panel(Rectangle r) {
     float x = r.x + 8, w = r.width - 16, y = r.y + 8;
 
     int prev_tab = browser_tab;
-    GuiToggleGroup((Rectangle){x, y, w / 2 - 1, 26}, "Declared;assets/", &browser_tab);
+    GuiToggleGroup((Rectangle){x, y, w / 3 - 2, 26}, "Textures;assets/;Texts", &browser_tab);
     if (prev_tab != browser_tab) active_field = 0;
     y += 32;
     text("Filter", x, y + 4, DARKGRAY);
@@ -585,8 +614,12 @@ static void left_panel(Rectangle r) {
 
     static int idx[MAX_TEX > 8192 ? MAX_TEX : 8192];
     int n = 0;
-    int total = browser_tab == 0 ? P.tex_count : asset_count;
+    int total = browser_tab == 0 ? P.tex_count : browser_tab == 1 ? asset_count : P.text_count;
     for (int i = 0; i < total && n < (int)(sizeof(idx) / sizeof(idx[0])); i++) {
+        if (browser_tab == 2) {
+            if (matches(P.texts[i].name) || matches(P.texts[i].str[0])) idx[n++] = i;
+            continue;
+        }
         const char *s = browser_tab == 0 ? P.tex[i].name : assets[i].path;
         if (matches(s) || (browser_tab == 0 && matches(P.tex[i].path))) idx[n++] = i;
     }
@@ -613,7 +646,9 @@ static void left_panel(Rectangle r) {
 
         Color c = BLACK;
         const char *label;
-        if (browser_tab == 0) {
+        if (browser_tab == 2) {
+            label = TextFormat("%s   %s", P.texts[i].name, P.texts[i].str[0]);
+        } else if (browser_tab == 0) {
             label = P.tex[i].name;
             if (P.tex[i].is_new) c = (Color){0, 120, 40, 255};
             if (!P.tex[i].path[0]) c = GRAY;
@@ -634,13 +669,34 @@ static void left_panel(Rectangle r) {
 
     // preview + details of the selection
     y = list.y + list.height + 8;
-    text("Drop as", x, y + 5, DARKGRAY);
-    GuiToggleGroup((Rectangle){x + 64, y, (w - 64) / 2 - 1, 26}, "Image;Label", &drop_mode);
-    y += 34;
-
     Rectangle pv = {x, y, w, 150};
     DrawRectangleRec(pv, (Color){40, 40, 46, 255});
     int s = browser_sel[browser_tab];
+    if (browser_tab == 2) {
+        if (s < 0) {
+            text("Pick a text, then drag it onto a", x, y + 156, GRAY);
+            text("button (or double-click it).", x, y + 174, GRAY);
+            text("New texts: add them to src/text.c", x, y + 204, GRAY);
+            text("(enum in include/text.h), Reload.", x, y + 222, GRAY);
+            return;
+        }
+        const char *str = text_str(&P, s, lang);
+        Vector2 sz = MeasureTextEx(game_font, str, 40, 0);
+        float fs = sz.x > pv.width - 10 ? 40 * (pv.width - 10) / sz.x : 40;
+        sz = MeasureTextEx(game_font, str, fs, 0);
+        DrawTextEx(game_font, str, (Vector2){pv.x + (pv.width - sz.x) / 2, pv.y + (pv.height - sz.y) / 2}, fs, 0, (Color){251, 228, 168, 255});
+        y += 156;
+        text(P.texts[s].name, x, y, BLACK);
+        y += 22;
+        for (int l = 0; l < P.lang_count; l++) {
+            const char *ln = strncmp(P.langs[l], "LANG_", 5) == 0 ? P.langs[l] + 5 : P.langs[l];
+            const char *v = P.texts[s].str[l];
+            text(TextFormat("%s  %s", ln, v[0] ? v : "(uses the first one)"), x, y, v[0] ? DARKGRAY : GRAY);
+            y += 18;
+        }
+        text("Edit them in src/text.c", x, y + 6, GRAY);
+        return;
+    }
     if (s >= 0) {
         Texture2D t = {0};
         float fw = 0, fh = 0;
@@ -784,18 +840,24 @@ static void right_panel(Rectangle r) {
             if (it->clickable) { tex_slot(fid + 10, x, y, w, "Hover", &it->hover_tex, false); y += 30; }
             else y += 30;
         } else {
-            bool was = it->translated;
-            GuiCheckBox((Rectangle){x, y + 4, 16, 16}, "Translated", &it->translated);
-            if (was != it->translated) { bool now = it->translated; it->translated = was; undo_push(); it->translated = now; }
-            y += 28;
-            int last = it->translated ? P.lang_count - 1 : 0;
-            for (int l = 0; l <= last; l++) {
-                const char *ln = P.langs[l];
-                if (strncmp(ln, "LANG_", 5) == 0) ln += 5;
-                tex_slot(fid + 20 + l, x, y, w, ln, &it->lang_tex[l], true);
-                y += 28;
+            text("Text", x, y + 4, DARKGRAY);
+            float lw = 74;
+            DrawRectangle((int)(x + lw), (int)y, (int)(w - lw - 64), 24, (Color){245, 245, 245, 255});
+            text(fit(it->text >= 0 ? P.texts[it->text].name : "(none)", w - lw - 70), x + lw + 4, y + 4, it->text >= 0 ? BLACK : RED);
+            if (GuiButton((Rectangle){x + w - 60, y, 58, 24}, "Use sel")) {
+                if (browser_tab == 2 && browser_sel[2] >= 0) { undo_push(); it->text = browser_sel[2]; }
+                else set_status(true, "Select a text in the Texts tab first");
             }
-            if (!it->translated) { text("Untranslated: every language", x, y + 2, GRAY); text("uses this one.", x, y + 18, GRAY); y += 36; }
+            y += 30;
+            if (it->text >= 0) {
+                for (int l = 0; l < P.lang_count; l++) {
+                    const char *ln = strncmp(P.langs[l], "LANG_", 5) == 0 ? P.langs[l] + 5 : P.langs[l];
+                    const char *v = P.texts[it->text].str[l];
+                    text(fit(TextFormat("%s  %s", ln, v[0] ? v : "(uses the first one)"), w), x, y, v[0] ? DARKGRAY : GRAY);
+                    y += 18;
+                }
+            }
+            y += 6;
         }
 
         bool was_locked = it->locked;
@@ -835,8 +897,8 @@ static void right_panel(Rectangle r) {
         if (i == sel) DrawRectangleRec(row, (Color){180, 210, 255, 255});
         else if (hot) DrawRectangleRec(row, (Color){230, 238, 250, 255});
         int k = layout_index_of_kind(&L, i);
-        const char *nm = it->kind == ITEM_IMAGE ? P.tex[it->tex].name : P.tex[label_tex(it, lang)].name;
-        if (strncmp(nm, "TEX_", 4) == 0) nm += 4;
+        const char *nm = it->kind == ITEM_IMAGE ? P.tex[it->tex].name : (it->text >= 0 ? P.texts[it->text].name : "(no text)");
+        if (strncmp(nm, "TEX_", 4) == 0 || strncmp(nm, "TXT_", 4) == 0) nm += 4;
         char line[PATH_LEN];
         snprintf(line, sizeof(line), "%s%d %s%s%s", it->kind == ITEM_IMAGE ? "E" : "T", k,
                  it->locked ? "[lock] " : "", it->kind == ITEM_IMAGE && it->clickable ? "[click] " : "", nm);
@@ -866,7 +928,7 @@ static void canvas_draw(Vector2 mc, bool mouse_in_view) {
     for (int i = 0; i < L.count; i++) {
         const Item *it = &L.items[i];
         if (it->kind != ITEM_TEXT) continue;
-        draw_tex(tex_drawn(label_tex(it, lang)), label_rect(it), WHITE);
+        draw_label(label_str(it), label_rect(it));
     }
 
     // canvas edge + center lines
@@ -1364,14 +1426,14 @@ static char  script_line[256];
 static bool  script_have;
 
 static void dump_state(int frame) {
-    printf("[frame %d] screen=%s dirty=%d sel=%d tab=%d drop=%d modal=%d zoom=%.4f pan=%.1f,%.1f items=%d\n",
-           frame, have_screen ? cur.name : "-", dirty, sel, browser_tab, drop_mode, modal, zoom, pan.x, pan.y, L.count);
+    printf("[frame %d] screen=%s dirty=%d sel=%d tab=%d modal=%d zoom=%.4f pan=%.1f,%.1f items=%d\n",
+           frame, have_screen ? cur.name : "-", dirty, sel, browser_tab, modal, zoom, pan.x, pan.y, L.count);
     for (int i = 0; i < L.count; i++) {
         const Item *it = &L.items[i];
         printf("   %c%d {%g,%g,%g,%g}", it->kind == ITEM_IMAGE ? 'E' : 'T', layout_index_of_kind(&L, i),
                it->area.x, it->area.y, it->area.width, it->area.height);
         if (it->kind == ITEM_IMAGE) printf(" %s%s%s\n", P.tex[it->tex].name, it->clickable ? " click->" : "", it->clickable ? P.tex[it->hover_tex].name : "");
-        else { printf(" tr=%d", it->translated); for (int l = 0; l < P.lang_count; l++) printf(" %s", it->lang_tex[l] >= 0 ? P.tex[it->lang_tex[l]].name : "-"); printf("\n"); }
+        else printf(" %s \"%s\"\n", it->text >= 0 ? P.texts[it->text].name : "-", text_str(&P, it->text, lang));
     }
     fflush(stdout);
 }
@@ -1450,6 +1512,7 @@ int main(int argc, char **argv) {
 
     if (!project_load(&P, root)) { CloseWindow(); return 1; }
     scan_assets();
+    load_game_font();
 
     const char *ui_paths[] = {"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans.ttf"};
     const char *mono_paths[] = {"/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", "/usr/share/fonts/TTF/DejaVuSansMono.ttf"};
@@ -1515,8 +1578,8 @@ int main(int argc, char **argv) {
         if (drag == DRAG_BROWSER) {
             int b = browser_sel[browser_tab];
             if (b >= 0) {
-                const char *nm = browser_tab == 0 ? P.tex[b].name : GetFileName(assets[b].path);
-                const char *what = drop_mode == 0 ? "image" : "label";
+                const char *nm = browser_tab == 0 ? P.tex[b].name : browser_tab == 1 ? GetFileName(assets[b].path) : P.texts[b].name;
+                const char *what = browser_tab == 2 ? "label" : "image";
                 text(TextFormat("+ %s (%s)", nm, what), m.x + 14, m.y + 10, in_view ? YELLOW : GRAY);
             }
         }

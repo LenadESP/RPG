@@ -28,20 +28,9 @@ void game_menu_draw(void (*start_game)(void), void (*close_game)(void)){
     };
 
     static const CanvasElementText UITexts[] = {
-        [0] = {{576.0f, 520.0f, 520.0f, 100.0f}, true, {
-                   [LANG_ES] = TEX_MAINMENU_TEXT_JUGAR,
-                   [LANG_EN] = TEX_MAINMENU_TEXT_PLAY,
-                   [LANG_EU] = TEX_MAINMENU_TEXT_JOLASTU}},
-
-        [1] = {{576.0f, 650.0f, 520.0f, 100.0f}, true, {
-                   [LANG_ES] = TEX_MAINMENU_TEXT_CONFIGURACION,
-                   [LANG_EN] = TEX_MAINMENU_TEXT_CONFIGURATION,
-                   [LANG_EU] = TEX_MAINMENU_TEXT_KONFIGURAZIOA}},
-
-        [2] = {{576.0f, 780.0f, 520.0f, 100.0f}, true, {
-                   [LANG_ES] = TEX_MAINMENU_TEXT_SALIR,
-                   [LANG_EN] = TEX_MAINMENU_TEXT_EXIT,
-                   [LANG_EU] = TEX_MAINMENU_TEXT_ITXI}},
+        [0] = {{576.0f, 520.0f, 520.0f, 100.0f}, TXT_PLAY},
+        [1] = {{576.0f, 650.0f, 520.0f, 100.0f}, TXT_CONFIG},
+        [2] = {{576.0f, 780.0f, 520.0f, 100.0f}, TXT_EXIT},
     };
 
     // Mouse comes in screen space. Undo the transform so it speaks canvas and
@@ -73,30 +62,8 @@ void game_menu_draw(void (*start_game)(void), void (*close_game)(void)){
     }
     last_hovered = hovered_now;
 
-    // TODO: this comes from the translation system (card 32) once it exists.
-    Language current_language = LANG_ES;
-
     for (int i = 0; i < (int)(sizeof(UITexts) / sizeof(UITexts[0])); i++) {
-        const CanvasElementText *label = &UITexts[i];
-
-        // Untranslated labels (proper nouns) always live at index 0.
-        TextureId label_id = label->translated ? label->textures[current_language]
-                                               : label->textures[LANG_ES];
-        TextureAsset asset = texture_get(label_id);
-
-        // Fixed height, width from the texture's own ratio, so every language
-        // reads at the same size and none of them get squashed.
-        float label_h = MENU_TEXT_HEIGHT;
-        float label_w = label_h * asset.frame_w / asset.frame_h;
-
-        Rectangle label_area = {label->area.x + (label->area.width  - label_w) / 2.0f,
-                                label->area.y + (label->area.height - label_h) / 2.0f,
-                                label_w, label_h};
-
-        DrawTexturePro(asset.texture,
-                       (Rectangle){0, 0, asset.frame_w, asset.frame_h},
-                       canvas_to_screen(label_area, scale, offset_x, offset_y),
-                       (Vector2){0, 0}, 0, WHITE);
+        text_draw(UITexts[i].text, UITexts[i].area, scale, offset_x, offset_y);
     }
 
     // Plaques are UIElements 2, 3 and 4.
@@ -137,20 +104,9 @@ void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *ca
     };
 
     static const CanvasElementText UITexts[] = {
-        [0] = {{576.0f, 290.0f, 520.0f, 100.0f}, true, {
-                   [LANG_ES] = TEX_MAINMENU_TEXT_VOLVER_AL_JUEGO,
-                   [LANG_EN] = TEX_MAINMENU_TEXT_RESUME,
-                   [LANG_EU] = TEX_MAINMENU_TEXT_ITZULI_JOKURA}},
-
-        [1] = {{576.0f, 420.0f, 520.0f, 100.0f}, true, {
-                   [LANG_ES] = TEX_MAINMENU_TEXT_CONFIGURACION,
-                   [LANG_EN] = TEX_MAINMENU_TEXT_CONFIGURATION,
-                   [LANG_EU] = TEX_MAINMENU_TEXT_KONFIGURAZIOA}},
-
-        [2] = {{576.0f, 550.0f, 520.0f, 100.0f}, true, {
-                   [LANG_ES] = TEX_MAINMENU_TEXT_VOLVER_AL_MENU,
-                   [LANG_EN] = TEX_MAINMENU_TEXT_MENU,
-                   [LANG_EU] = TEX_MAINMENU_TEXT_ITZULI_MENURA}},
+        [0] = {{576.0f, 290.0f, 520.0f, 100.0f}, TXT_RESUME},
+        [1] = {{576.0f, 420.0f, 520.0f, 100.0f}, TXT_CONFIG},
+        [2] = {{576.0f, 550.0f, 520.0f, 100.0f}, TXT_TO_MENU},
     };
 
     //Mouse to canvas space
@@ -179,28 +135,8 @@ void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *ca
     }
     last_hovered = hovered_now;
 
-    //TODO: comes from the translation system
-    Language current_language = LANG_ES;
-
     for (int i = 0; i < (int)(sizeof(UITexts) / sizeof(UITexts[0])); i++) {
-        const CanvasElementText *label = &UITexts[i];
-
-        TextureId label_id = label->translated ? label->textures[current_language]
-                                               : label->textures[LANG_ES];
-        TextureAsset asset = texture_get(label_id);
-
-        //Fixed height, width from the texture's ratio
-        float label_h = MENU_TEXT_HEIGHT;
-        float label_w = label_h * asset.frame_w / asset.frame_h;
-
-        Rectangle label_area = {label->area.x + (label->area.width  - label_w) / 2.0f,
-                                label->area.y + (label->area.height - label_h) / 2.0f,
-                                label_w, label_h};
-
-        DrawTexturePro(asset.texture,
-                       (Rectangle){0, 0, asset.frame_w, asset.frame_h},
-                       canvas_to_screen(label_area, scale, offset_x, offset_y),
-                       (Vector2){0, 0}, 0, WHITE);
+        text_draw(UITexts[i].text, UITexts[i].area, scale, offset_x, offset_y);
     }
 
     //Click handling. Careful: indices must match the table above

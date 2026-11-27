@@ -6,7 +6,9 @@
 //   typedef enum { A, B, ..., X_COUNT } Name;
 //   [TEX_X] = { "path", fw, fh, ox, oy [, smooth] },
 //   static const CanvasElement     NAME[] = { [i] = {TEX, {x,y,w,h} [, bool, TEX]}, ... };
-//   static const CanvasElementText NAME[] = { [i] = {{x,y,w,h}, bool, { [LANG] = TEX, ... }}, ... };
+//   static const CanvasElementText NAME[] = { [i] = {{x,y,w,h}, TXT_X}, ... };
+//   [TXT_X] = { [LANG] = "string", ... },                     (src/text.c)
+//   static const char *font_path = "assets/...";              (src/text.c)
 //
 // If a table uses something it can't read (an expression, a macro call, ...), it
 // says so in the warnings and refuses that table instead of guessing.
@@ -135,6 +137,19 @@ int tex_find(const Project *p, const char *name) {
     for (int i = 0; i < p->tex_count; i++)
         if (strcmp(p->tex[i].name, name) == 0) return i;
     return -1;
+}
+
+int text_find(const Project *p, const char *name) {
+    for (int i = 0; i < p->text_count; i++)
+        if (strcmp(p->texts[i].name, name) == 0) return i;
+    return -1;
+}
+
+const char *text_str(const Project *p, int text, int lang) {
+    if (text < 0 || text >= p->text_count) return "";
+    const TextEntry *t = &p->texts[text];
+    if (lang >= 0 && lang < MAX_LANGS && t->str[lang][0]) return t->str[lang];
+    return t->str[0];
 }
 
 int tex_find_path(const Project *p, const char *path) {
@@ -320,6 +335,64 @@ static void parse_texture_defs(Project *p, const Toks *ts, bool from_draft) {
     }
 }
 
+// "abc" "def" -> abcdef, like the compiler does
+static bool read_string(const Toks *ts, int *i, char *out, int size) {
+    if (ts->t[*i].kind != T_STR) return false;
+    int len = 0;
+    out[0] = 0;
+    while (ts->t[*i].kind == T_STR) {
+        len += snprintf(out + len, len < size ? size - len : 0, "%s", ts->t[*i].text);
+        (*i)++;
+    }
+    return true;
+}
+
+// static const char *NAME = "..." ;   anywhere in the file
+static bool find_string_var(const Toks *ts, const char *name, char *out, int size) {
+    for (int i = 0; i + 2 < ts->n; i++) {
+        if (!is_id(&ts->t[i], name) || !is_p(&ts->t[i + 1], '=')) continue;
+        int j = i + 2;
+        return read_string(ts, &j, out, size);
+    }
+    return false;
+}
+
+static int lang_index(const Project *p, const Tok *t);
+
+// [TXT_X] = { [LANG] = "string", ... }   anywhere in the file
+static void parse_text_defs(Project *p, const Toks *ts) {
+    for (int i = 0; i + 6 < ts->n; i++) {
+        int j = i;
+        if (!expect(ts, &j, '[')) continue;
+        if (ts->t[j].kind != T_IDENT) continue;
+        const char *name = ts->t[j].text; j++;
+        if (!expect(ts, &j, ']') || !expect(ts, &j, '=') || !expect(ts, &j, '{')) continue;
+        if (!is_p(&ts->t[j], '[') && ts->t[j].kind != T_STR) continue;   // not a text def
+
+        int idx = text_find(p, name);
+        if (idx < 0) continue;   // e.g. the [TXT_COUNT][LANG_COUNT] of the declaration itself
+        TextEntry *t = &p->texts[idx];
+
+        int pos = 0;
+        while (!is_p(&ts->t[j], '}') && ts->t[j].kind != T_EOF) {
+            int lang = pos;
+            if (is_p(&ts->t[j], '[')) {
+                j++;
+                lang = lang_index(p, &ts->t[j]);
+                j++;
+                if (!expect(ts, &j, ']') || !expect(ts, &j, '=')) break;
+            }
+            if (lang < 0 || lang >= MAX_LANGS || !read_string(ts, &j, t->str[lang], STR_LEN)) {
+                project_warn(p, "%s (line %d): couldn't read its strings", name, ts->t[i].line);
+                break;
+            }
+            pos = lang + 1;
+            if (is_p(&ts->t[j], ',')) j++;
+        }
+        if (!t->str[0][0]) project_warn(p, "%s has no %s string, the game draws nothing", name, p->langs[0]);
+    }
+}
+
 // ─── canvas tables ───────────────────────────────────────────
 
 typedef struct {
@@ -411,6 +484,19 @@ static bool read_tex(Project *p, const Toks *ts, int *i, int *out) {
     return true;
 }
 
+static bool read_text(Project *p, const Toks *ts, int *i, int *out) {
+    const Tok *t = &ts->t[*i];
+    if (t->kind != T_IDENT) return false;
+    int idx = text_find(p, t->text);
+    if (idx < 0) {
+        project_warn(p, "%s is used in a table but isn't in enum TextId", t->text);
+        return false;
+    }
+    *out = idx;
+    (*i)++;
+    return true;
+}
+
 static int lang_index(const Project *p, const Tok *t) {
     if (t->kind == T_NUM) return (int)strtol(t->text, NULL, 0);
     for (int i = 0; i < p->lang_count; i++) if (strcmp(p->langs[i], t->text) == 0) return i;
@@ -436,7 +522,7 @@ static int read_table(Project *p, const Toks *ts, const TableRef *r, Item *items
         if (used[idx]) { project_warn(p, "%s line %d: index [%d] appears twice", r->name, r->line, idx); goto fail; }
 
         Item it = {0};
-        for (int l = 0; l < MAX_LANGS; l++) it.lang_tex[l] = -1;
+        it.text = -1;
         it.tex = it.hover_tex = p->tex_none;
 
         if (!expect(ts, &i, '{')) goto fail;
@@ -453,23 +539,7 @@ static int read_table(Project *p, const Toks *ts, const TableRef *r, Item *items
             }
         } else {
             it.kind = ITEM_TEXT;
-            if (!read_rect(ts, &i, &it.area) || !expect(ts, &i, ',') || !read_bool(ts, &i, &it.translated)) goto fail;
-            if (!expect(ts, &i, ',') || !expect(ts, &i, '{')) goto fail;
-            int pos = 0;
-            while (!is_p(&ts->t[i], '}')) {
-                int lang = pos;
-                if (is_p(&ts->t[i], '[')) {
-                    i++;
-                    lang = lang_index(p, &ts->t[i]);
-                    i++;
-                    if (!expect(ts, &i, ']') || !expect(ts, &i, '=')) goto fail;
-                }
-                if (lang < 0 || lang >= MAX_LANGS) goto fail;
-                if (!read_tex(p, ts, &i, &it.lang_tex[lang])) goto fail;
-                pos = lang + 1;
-                if (is_p(&ts->t[i], ',')) i++;
-            }
-            i++;
+            if (!read_rect(ts, &i, &it.area) || !expect(ts, &i, ',') || !read_text(p, ts, &i, &it.text)) goto fail;
         }
         if (is_p(&ts->t[i], ',')) i++;
         if (!expect(ts, &i, '}')) goto fail;
@@ -539,10 +609,12 @@ bool project_load(Project *p, const char *root) {
     // defines.h
     snprintf(path, sizeof(path), "%s/include/defines.h", root);
     parse_defines(path);
-    p->canvas_w = 1672; p->canvas_h = 941; p->text_h = 66;
+    p->canvas_w = 1672; p->canvas_h = 941; p->text_h = 48; p->text_outline = 3; p->font_bake_size = 120;
     if (!define_get("CANVAS_WIDTH", &p->canvas_w))      project_warn(p, "CANVAS_WIDTH not found, using 1672");
     if (!define_get("CANVAS_HEIGHT", &p->canvas_h))     project_warn(p, "CANVAS_HEIGHT not found, using 941");
-    if (!define_get("MENU_TEXT_HEIGHT", &p->text_h))    project_warn(p, "MENU_TEXT_HEIGHT not found, using 66");
+    if (!define_get("MENU_TEXT_HEIGHT", &p->text_h))    project_warn(p, "MENU_TEXT_HEIGHT not found, using 48");
+    if (!define_get("TEXT_OUTLINE_WIDTH", &p->text_outline))  project_warn(p, "TEXT_OUTLINE_WIDTH not found, using 3");
+    if (!define_get("FONT_LOAD_SIZE", &p->font_bake_size)) project_warn(p, "FONT_LOAD_SIZE not found, using 120");
 
     Toks ts = {0};
 
@@ -553,6 +625,21 @@ bool project_load(Project *p, const char *root) {
         project_warn(p, "enum Language not found in include/text.h");
         p->lang_count = 1;
         snprintf(p->langs[0], NAME_LEN, "0");
+    }
+
+    // text.h -> text ids, text.c -> their strings and the font
+    static char text_names[MAX_TEXTS][NAME_LEN];
+    int nt = parse_enum(&ts, "TextId", text_names, MAX_TEXTS);
+    if (nt < 0) { project_warn(p, "enum TextId not found in include/text.h"); nt = 0; }
+    for (int i = 0; i < nt; i++) snprintf(p->texts[p->text_count++].name, NAME_LEN, "%.*s", NAME_LEN - 1, text_names[i]);
+
+    snprintf(path, sizeof(path), "%s/src/text.c", root);
+    if (tokenize(path, &ts)) {
+        parse_text_defs(p, &ts);
+        if (!find_string_var(&ts, "font_path", p->font_path, PATH_LEN)) project_warn(p, "font_path not found in src/text.c");
+        find_string_var(&ts, "font_characters", p->font_charset, sizeof(p->font_charset));
+    } else {
+        project_warn(p, "can't read src/text.c");
     }
 
     // texture.h -> ids

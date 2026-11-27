@@ -7,8 +7,9 @@
 // The editor NEVER writes into the game. It reads:
 //   include/texture.h   -> enum TextureId          (ids, in order)
 //   src/texture.c       -> texture_defs[]           (path, frame size, smooth)
-//   include/text.h      -> enum Language            (LANG_ES, LANG_EN, ...)
-//   include/defines.h   -> CANVAS_WIDTH/HEIGHT, MENU_TEXT_HEIGHT
+//   include/text.h      -> enum Language, enum TextId
+//   src/text.c          -> text_defs[] (the strings), font_path, font_charset
+//   include/defines.h   -> CANVAS_WIDTH/HEIGHT, MENU_TEXT_HEIGHT, TEXT_OUTLINE, FONT_BAKE_SIZE
 //   src/*.c             -> CanvasElement / CanvasElementText tables, per function
 // and writes only into tools/ui_editor/out/.
 
@@ -22,6 +23,8 @@
 #define NAME_LEN     96
 #define PATH_LEN     512
 #define MAX_WARN     64
+#define MAX_TEXTS    512
+#define STR_LEN      256
 
 typedef struct TexEntry {
     char name[NAME_LEN];   // TEX_MAINMENU_BG
@@ -36,6 +39,12 @@ typedef struct TexEntry {
     bool load_tried;
 } TexEntry;
 
+// One TXT_ id and its string in every language. "" = not translated (the game uses LANG_ES).
+typedef struct TextEntry {
+    char name[NAME_LEN];             // TXT_PLAY
+    char str[MAX_LANGS][STR_LEN];
+} TextEntry;
+
 typedef enum { ITEM_IMAGE, ITEM_TEXT } ItemKind;
 
 typedef struct Item {
@@ -46,8 +55,7 @@ typedef struct Item {
     bool clickable;        // hover_effect
     int  hover_tex;
     // ITEM_TEXT   -> CanvasElementText
-    bool translated;
-    int  lang_tex[MAX_LANGS];   // -1 = not set
+    int  text;             // texts index, -1 = not set
     // editor only, never exported
     bool locked;
 } Item;
@@ -63,10 +71,15 @@ typedef struct Screen {
 
 typedef struct Project {
     char root[PATH_LEN];          // repo root
-    float canvas_w, canvas_h, text_h;
+    float canvas_w, canvas_h, text_h, text_outline, font_bake_size;
 
     char langs[MAX_LANGS][NAME_LEN];
     int  lang_count;
+
+    TextEntry texts[MAX_TEXTS];
+    int  text_count;
+    char font_path[PATH_LEN];     // relative to the repo root, "" if not found
+    char font_charset[STR_LEN * 4];
 
     TexEntry tex[MAX_TEX];
     int  tex_count;
@@ -89,6 +102,8 @@ typedef struct Layout {
 bool project_load(Project *p, const char *root);               // false = fatal (can't find the game)
 bool layout_load(Project *p, int screen, Layout *out);          // tables of one screen
 int  tex_find(const Project *p, const char *name);              // -1 if missing
+int  text_find(const Project *p, const char *name);             // -1 if missing
+const char *text_str(const Project *p, int text, int lang);     // falls back to index 0, like text_get()
 int  tex_find_path(const Project *p, const char *path);
 int  tex_add_new(Project *p, const char *path, int w, int h);   // from an asset png
 void tex_name_from_path(const char *path, char *out, int size);

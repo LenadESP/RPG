@@ -21,7 +21,7 @@ static int find_screen(const char *name) {
     return -1;
 }
 
-static bool same_item(const Item *a, const Item *b, int langs) {
+static bool same_item(const Item *a, const Item *b) {
     if (a->kind != b->kind) return false;
     if (a->area.x != b->area.x || a->area.y != b->area.y || a->area.width != b->area.width || a->area.height != b->area.height) return false;
     if (a->kind == ITEM_IMAGE) {
@@ -29,10 +29,7 @@ static bool same_item(const Item *a, const Item *b, int langs) {
         if (a->clickable && a->hover_tex != b->hover_tex) return false;
         return true;
     }
-    if (a->translated != b->translated) return false;
-    int last = a->translated ? langs - 1 : 0;
-    for (int k = 0; k <= last; k++) if (a->lang_tex[k] != b->lang_tex[k]) return false;
-    return true;
+    return a->text == b->text;
 }
 
 // Writes the export into a temp file shaped like a draft and reads it back.
@@ -62,7 +59,7 @@ static bool roundtrip(int s) {
 
     if (A.count != B.count) { printf("  item count %d -> %d\n", A.count, B.count); return false; }
     for (int i = 0; i < A.count; i++)
-        if (!same_item(&A.items[i], &B.items[i], P.lang_count)) { printf("  item %d differs\n", i); return false; }
+        if (!same_item(&A.items[i], &B.items[i])) { printf("  item %d differs\n", i); return false; }
     return true;
 }
 

@@ -7,6 +7,7 @@
 #include "texture.h"
 #include "map.h"
 #include "sound.h"
+#include "text.h"
 
 #include "defines.h"
 
@@ -82,6 +83,7 @@ int main(void) {
     //Load all textures. This is where a loading screen would come in handy.
     texture_load_all();
     sound_load_all();
+    font_load();
     map_load(&map, camino_sur_layers, sizeof(camino_sur_layers) / sizeof(camino_sur_layers[0]), 4, collision_path);
 
     //Calculate map height and width in pixels
@@ -192,6 +194,7 @@ static void toggle_fullscreen(void){
 void game_shutdown(void){
     texture_unload_all();
     sound_unload_all();
+    font_unload();
 
     CloseAudioDevice();
     CloseWindow();
