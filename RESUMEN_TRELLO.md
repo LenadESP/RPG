@@ -1,6 +1,6 @@
 # Resumen del Trello — RPG (Izar Hautsia)
 
-Sacado del tablero el 26/11/2026 y actualizado el 27/11/2026, después de la fuente, la config y las subcarpetas. Sirve para ponerse al día; el detalle sigue en cada tarjeta.
+Sacado del tablero el 26/11/2026 y actualizado el 27/11/2026, después de la fuente, la config, las subcarpetas y la revisión del parser de la config. Sirve para ponerse al día; el detalle sigue en cada tarjeta.
 
 ---
 
@@ -29,7 +29,8 @@ Sacado del tablero el 26/11/2026 y actualizado el 27/11/2026, después de la fue
   - Cada ajuste es un `int` de `SettingId`: sliders de 0 a 100, checkbox 0/1, teclas como `KEY_*` de raylib, y el resto como su enum.
   - El menú edita la copia `pending`, que solo pasa a `applied` con Aplicar (Restablecer aplica directo y Cancelar o Esc descartan).
   - Las teclas son ajustes, y `input.c` las lee con `settings_get`.
-- **Config en disco**: `conf.c` es genérico y trabaja con líneas `clave: valor`. `settings.conf` va en el repo con los defaults y se guarda al aplicar, al restablecer y con F11. Si falta el fichero, se usan los defaults y sale un warning.
+- **Config en disco**: `conf.c` es genérico y trabaja con líneas `clave: valor` (formato `:`, no `=`). Los espacios alrededor de la clave dan igual, las líneas en blanco y las que empiezan por `#` se saltan, y una línea que no se entiende saca un warning con su número. `settings.conf` va en el repo con los defaults y se guarda al aplicar, al restablecer y con F11. Si falta el fichero, se usan los defaults y sale un warning.
+- **F11 guarda en disco en cada pulsación**: decidido así a propósito. Son unos 300 bytes, y guardar al cerrar perdería el ajuste si el juego se cuelga.
 - **Cámara**: Camera2D en main, pegada al player sin lerp. Zoom entero calculado desde la ventana (resolución virtual 240x136, suelo de 1).
 - **Audio**: `sound.c` y `music.c` son hermanos, no capas. `main` hace el `InitAudioDevice`. Seis canales en `volume.c`, puestos por los sliders de la config. Un audio que falta es warning, nunca fatal.
 - **Parámetros**: los internos en `defines.h` (macros con prefijo de familia). La config de usuario va aparte, en runtime (`settings.conf`).
@@ -98,6 +99,7 @@ Sacado del tablero el 26/11/2026 y actualizado el 27/11/2026, después de la fue
 - `GameState` y su switch estarían mejor en `game.c` que en `main.c` (no urge).
 - Falta probar el letterbox con una ventana que no sea 16:9 (que no se deforme y que el hover acierte).
 - `screenshot000-004.png` en la raíz del repo, de probar el F12.
+- `make win` con llvm-mingw (clang) da 44 warnings de `missing field … initializer` en `texture.c` y `game.c`: son tablas que no rellenan el último campo. No rompen nada; o se rellenan o se apaga el warning en el Makefile.
 
 ---
 
@@ -121,6 +123,7 @@ Sacado del tablero el 26/11/2026 y actualizado el 27/11/2026, después de la fue
 - **Subcarpetas en `src/` e `include/`**, con el Makefile adaptado.
 - **`make win` saca el zip**, solo con los assets que se usan.
 - **Limpieza de la UI**: la escala va en `CanvasTransform`, y el menú y la pausa usan los helpers. Mientras se espera una tecla, el resto de teclas no hacen nada.
+- **Revisión del parser y la UI**: `key_up : 87` ya funciona (se recortan los espacios de la clave), vuelve el warning de línea ilegible, se vacía la cola de `GetKeyPressed` al empezar a esperar una tecla, y el contorno del texto se dibuja 8 veces en vez de 9.
 
 ---
 

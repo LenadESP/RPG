@@ -66,8 +66,10 @@ dituzte; ez dago aldagai global ez *singleton*-ik. Modulu bakoitzak gauza bat eg
 marrazketaren ordena erabakitzen du.
 
 **Ezarpenak.** Menuak kopia bat editatzen du, eta *Aplikatu* sakatzean bakarrik pasatzen
-da jokora eta `settings.conf`-era (`gakoa: balioa`, lerro bakoitzeko bat). Fitxategirik
-ez badago, balio lehenetsiak erabiltzen dira.
+da jokora eta `settings.conf`-era (`gakoa: balioa`, lerro bakoitzeko bat). Lerro hutsak
+eta `#`-z hasten direnak (iruzkinak) saltatu egiten dira, eta ulertzen ez den lerro batek
+abisua ematen du, lerro-zenbakiarekin. Fitxategirik ez badago, balio lehenetsiak
+erabiltzen dira.
 
 **Kolisioak.** AABB (*axis-aligned bounding box*) bidez, ardatz bakoitza bestearen
 ondoren ebatzita. Horri esker pertsonaia hormetan zehar irristatzen da, trabatu gabe.
@@ -107,6 +109,11 @@ karpetan atera, egitura hau geratzeko:
 lib/raylib-win/include/raylib.h
 lib/raylib-win/lib/libraylib.a
 ```
+
+> **Oharra — *root* baimenik gabe.** `mingw-w64` instalatu ezin bada,
+> [llvm-mingw](https://github.com/mstorsjo/llvm-mingw/releases) `$HOME`-en atera daiteke
+> eta haren `bin/` karpeta `PATH`-era gehitu, `make win` egin aurretik:
+> `export PATH=~/.local/opt/llvm-mingw-.../bin:$PATH`.
 
 ---
 
