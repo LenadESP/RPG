@@ -223,7 +223,7 @@ static void scan_assets(void) {
 // The browser's selection as a registry index, registering a new texture
 // the first time an asset png is used.
 static int browser_resolve(void) {
-    if (browser_tab == 2) return -1;
+    if (browser_tab >= 2) return -1;
     if (browser_tab == 0) return browser_sel[0];
     int a = browser_sel[1];
     if (a < 0) return -1;
@@ -262,9 +262,9 @@ static void redo(void) {
     dirty = true;
 }
 
-static int image_count(void) {
+static int kind_end(ItemKind k) {   // one past the last item of this kind (images, then texts, then widgets)
     int n = 0;
-    for (int i = 0; i < L.count; i++) if (L.items[i].kind == ITEM_IMAGE) n++;
+    for (int i = 0; i < L.count; i++) if (L.items[i].kind <= k) n++;
     return n;
 }
 
@@ -272,8 +272,8 @@ static int image_count(void) {
 // draws them (all of UIElements, then all of UITexts).
 static int insert_item(Item it, int at) {
     if (L.count >= MAX_ITEMS) { set_status(true, "Too many items"); return -1; }
-    int lo = it.kind == ITEM_IMAGE ? 0 : image_count();
-    int hi = it.kind == ITEM_IMAGE ? image_count() : L.count;
+    int lo = it.kind == ITEM_IMAGE ? 0 : kind_end(it.kind - 1);
+    int hi = kind_end(it.kind);
     if (at < lo || at > hi) at = hi;
     memmove(&L.items[at + 1], &L.items[at], sizeof(Item) * (L.count - at));
     L.items[at] = it;
@@ -291,6 +291,8 @@ static Item new_item(ItemKind k) {
     it.kind = k;
     it.tex = it.hover_tex = P.tex_none;
     it.text = -1;
+    it.style = style_find(&P, "TEXT_BUTTON");
+    if (it.style < 0) it.style = 0;
     return it;
 }
 
@@ -299,24 +301,77 @@ static const char *label_str(const Item *it) {
     return s[0] ? s : "(no text)";
 }
 
-static Vector2 label_size(const char *s) {
-    return MeasureTextEx(game_font, s, P.text_h, 0);
+static Vector2 label_size(const char *s, int style) {
+    return MeasureTextEx(game_font, s, P.styles[style].size, 0);
 }
 
-// Same as text_draw() in src/text.c: font size MENU_TEXT_HEIGHT, centred in area.
+// Same as text_draw() in src/text.c: size from the style, centred (or left) in area.
+static Rectangle text_rect_in(const char *s, int style, Rectangle area) {
+    Vector2 sz = label_size(s, style);
+    float x = P.styles[style].centered ? area.x + (area.width - sz.x) / 2.0f : area.x;
+    return (Rectangle){x, area.y + (area.height - sz.y) / 2.0f, sz.x, sz.y};
+}
+
 static Rectangle label_rect(const Item *it) {
-    Vector2 sz = label_size(label_str(it));
-    return (Rectangle){it->area.x + (it->area.width - sz.x) / 2.0f, it->area.y + (it->area.height - sz.y) / 2.0f, sz.x, sz.y};
+    return text_rect_in(label_str(it), it->style, it->area);
 }
 
-static void draw_label(const char *s, Rectangle canvas_rect) {
+static void draw_label(const char *s, Rectangle canvas_rect, int style) {
     Rectangle r = to_screen(canvas_rect);
-    float size = P.text_h * zoom, ow = P.text_outline * zoom;
-    Color fill = {251, 228, 168, 255}, outline = {29, 5, 28, 255};   // same as src/text.c
-    for (int dx = -1; dx <= 1; dx++)
-        for (int dy = -1; dy <= 1; dy++)
-            DrawTextEx(game_font, s, (Vector2){r.x + dx * ow, r.y + dy * ow}, size, 0, outline);
-    DrawTextEx(game_font, s, (Vector2){r.x, r.y}, size, 0, fill);
+    const StyleEntry *st = &P.styles[style];
+    float size = st->size * zoom;
+    Color dark = {29, 5, 28, 255};   // COLOR_DARK_PURPLE
+    if (st->outline) {
+        float ow = P.text_outline * zoom;
+        for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++)
+                DrawTextEx(game_font, s, (Vector2){r.x + dx * ow, r.y + dy * ow}, size, 0, dark);
+    } else {
+        float so = P.text_shadow * zoom;
+        DrawTextEx(game_font, s, (Vector2){r.x + so, r.y + so}, size, 0, dark);
+    }
+    DrawTextEx(game_font, s, (Vector2){r.x, r.y}, size, 0, st->color);
+}
+
+// A rough picture of each widget, using the game's own sprites when they exist
+static void draw_named_tex(const char *name, Rectangle area);
+static void draw_widget(const Item *it) {
+    const char *t = P.widget_types[it->wtype];
+    const char *setting = P.setting_count ? P.settings[it->setting] : "?";
+    if (strncmp(setting, "SETTING_", 8) == 0) setting += 8;
+    Rectangle a = it->area;
+    int value_style = style_find(&P, "TEXT_VALUE"); if (value_style < 0) value_style = 0;
+    int label_style = style_find(&P, "TEXT_LABEL"); if (label_style < 0) label_style = 0;
+    if (strcmp(t, "WIDGET_SLIDER") == 0) {
+        draw_named_tex("TEX_SETTINGS_SLIDER_TRACK", a);
+        draw_named_tex("TEX_SETTINGS_SLIDER_FILL", (Rectangle){a.x + 6, a.y + 6, a.width - 12, a.height - 12});
+        draw_named_tex("TEX_SETTINGS_SLIDER_THUMB", (Rectangle){a.x + a.width - 21, a.y + (a.height - 34) / 2, 30, 34});
+        Rectangle v = {a.x + a.width + 12, a.y + a.height / 2 - 20, 120, 40};
+        draw_label("100%", text_rect_in("100%", value_style, v), value_style);
+    } else if (strcmp(t, "WIDGET_CHECKBOX") == 0) {
+        draw_named_tex("TEX_SETTINGS_CHECKBOX_ON", (Rectangle){a.x, a.y, a.height, a.height});
+        Rectangle v = {a.x + a.height + 14, a.y, a.width - a.height - 14, a.height};
+        draw_label(setting, text_rect_in(setting, label_style, v), label_style);
+    } else if (strcmp(t, "WIDGET_DROPDOWN") == 0) {
+        draw_named_tex("TEX_SETTINGS_DROPDOWN_NORMAL", a);
+        draw_named_tex("TEX_SETTINGS_ARROW_DOWN", (Rectangle){a.x + a.width - 36, a.y + a.height / 2 - 10, 22, 22});
+        Rectangle v = {a.x, a.y, a.width - 40, a.height};
+        draw_label(setting, text_rect_in(setting, value_style, v), value_style);
+    } else if (strcmp(t, "WIDGET_RADIO") == 0) {
+        draw_named_tex("TEX_SETTINGS_RADIO_ON", (Rectangle){a.x + 4, a.y + a.height / 2 - 17, 34, 34});
+        DrawRectangleLinesEx(to_screen(a), 1, (Color){120, 200, 255, 90});
+    } else if (strcmp(t, "WIDGET_KEY") == 0) {
+        draw_named_tex("TEX_SETTINGS_KEYCAP_NORMAL", a);
+        draw_label("key", text_rect_in("key", value_style, a), value_style);
+    } else {
+        DrawRectangleLinesEx(to_screen(a), 2, (Color){120, 200, 255, 200});
+    }
+}
+
+static void draw_named_tex(const char *name, Rectangle area) {
+    int t = tex_find(&P, name);
+    if (t < 0) { DrawRectangleLinesEx(to_screen(area), 1, GRAY); return; }
+    draw_tex(tex_drawn(t), area, WHITE);
 }
 
 static Rectangle hit_rect(const Item *it) { return it->kind == ITEM_TEXT ? label_rect(it) : it->area; }
@@ -399,7 +454,7 @@ static void drop_text(Vector2 c) {
     if (btn >= 0) {
         it.area = L.items[btn].area;          // snaps onto the button: same rect, as in game.c
     } else {
-        Vector2 sz = label_size(label_str(&it));
+        Vector2 sz = label_size(label_str(&it), it.style);
         it.area = (Rectangle){snapv(c.x - sz.x / 2), snapv(c.y - sz.y / 2), roundf(sz.x), roundf(sz.y)};
     }
     undo_push();
@@ -408,8 +463,28 @@ static void drop_text(Vector2 c) {
     set_status(false, btn >= 0 ? "Label snapped onto UIElements[%d]" : "Added label", btn >= 0 ? layout_index_of_kind(&L, btn) : 0);
 }
 
+static void drop_widget(Vector2 c) {
+    int t = browser_sel[3];
+    if (t < 0) return;
+    Item it = new_item(ITEM_WIDGET);
+    it.wtype = t;
+    const char *n = P.widget_types[t];
+    float w = 300, h = 48;
+    if (strcmp(n, "WIDGET_SLIDER") == 0)   { w = 408; h = 18; }
+    if (strcmp(n, "WIDGET_CHECKBOX") == 0) { w = 178; h = 40; }
+    if (strcmp(n, "WIDGET_DROPDOWN") == 0) { w = 384; h = 54; }
+    if (strcmp(n, "WIDGET_RADIO") == 0)    { w = 868; h = 64; }
+    if (strcmp(n, "WIDGET_KEY") == 0)      { w = 130; h = 48; }
+    it.area = (Rectangle){snapv(c.x - w / 2), snapv(c.y - h / 2), w, h};
+    undo_push();
+    int at = insert_item(it, -1);
+    if (at >= 0) sel = at;
+    set_status(false, "Added %s. Pick its setting on the right", n);
+}
+
 static void drop_texture(Vector2 c) {
     if (browser_tab == 2) { drop_text(c); return; }
+    if (browser_tab == 3) { drop_widget(c); return; }
     int t = browser_resolve();
     if (t < 0) return;
     Drawn d = tex_drawn(t);
@@ -599,7 +674,7 @@ static void left_panel(Rectangle r) {
     float x = r.x + 8, w = r.width - 16, y = r.y + 8;
 
     int prev_tab = browser_tab;
-    GuiToggleGroup((Rectangle){x, y, w / 3 - 2, 26}, "Textures;assets/;Texts", &browser_tab);
+    GuiToggleGroup((Rectangle){x, y, w / 4 - 2, 26}, "Textures;assets/;Texts;Widgets", &browser_tab);
     if (prev_tab != browser_tab) active_field = 0;
     y += 32;
     text("Filter", x, y + 4, DARKGRAY);
@@ -614,8 +689,12 @@ static void left_panel(Rectangle r) {
 
     static int idx[MAX_TEX > 8192 ? MAX_TEX : 8192];
     int n = 0;
-    int total = browser_tab == 0 ? P.tex_count : browser_tab == 1 ? asset_count : P.text_count;
+    int total = browser_tab == 0 ? P.tex_count : browser_tab == 1 ? asset_count : browser_tab == 2 ? P.text_count : P.widget_type_count;
     for (int i = 0; i < total && n < (int)(sizeof(idx) / sizeof(idx[0])); i++) {
+        if (browser_tab == 3) {
+            if (matches(P.widget_types[i])) idx[n++] = i;
+            continue;
+        }
         if (browser_tab == 2) {
             if (matches(P.texts[i].name) || matches(P.texts[i].str[0])) idx[n++] = i;
             continue;
@@ -646,7 +725,9 @@ static void left_panel(Rectangle r) {
 
         Color c = BLACK;
         const char *label;
-        if (browser_tab == 2) {
+        if (browser_tab == 3) {
+            label = P.widget_types[i];
+        } else if (browser_tab == 2) {
             label = TextFormat("%s   %s", P.texts[i].name, P.texts[i].str[0]);
         } else if (browser_tab == 0) {
             label = P.tex[i].name;
@@ -672,6 +753,13 @@ static void left_panel(Rectangle r) {
     Rectangle pv = {x, y, w, 150};
     DrawRectangleRec(pv, (Color){40, 40, 46, 255});
     int s = browser_sel[browser_tab];
+    if (browser_tab == 3) {
+        text("Pick a widget type and drag it", x, y + 156, GRAY);
+        text("onto the canvas. Then choose its", x, y + 174, GRAY);
+        text("setting on the right.", x, y + 192, GRAY);
+        text("Widgets go in the UIWidgets table.", x, y + 222, GRAY);
+        return;
+    }
     if (browser_tab == 2) {
         if (s < 0) {
             text("Pick a text, then drag it onto a", x, y + 156, GRAY);
@@ -792,11 +880,13 @@ static void right_panel(Rectangle r) {
         Item *it = &L.items[sel];
         int k = layout_index_of_kind(&L, sel);
         bool img = it->kind == ITEM_IMAGE;
+        bool wid = it->kind == ITEM_WIDGET;
         int fid = (sel + 1) * 64;
 
         GuiLabel((Rectangle){x, y, w, 20}, TextFormat("#%i#%s[%d]   %s", img ? 12 : 10,
-                 img ? (cur.elem_table[0] ? cur.elem_table : "UIElements") : (cur.text_table[0] ? cur.text_table : "UITexts"),
-                 k, img ? "image" : "label"));
+                 img ? (cur.elem_table[0] ? cur.elem_table : "UIElements") :
+                 wid ? (cur.widget_table[0] ? cur.widget_table : "UIWidgets") : (cur.text_table[0] ? cur.text_table : "UITexts"),
+                 k, img ? "image" : wid ? "widget" : "label"));
         y += 26;
 
         if (img) { tex_slot(fid, x, y, w, "Texture", &it->tex, false); y += 30; }
@@ -819,7 +909,7 @@ static void right_panel(Rectangle r) {
                 Drawn d = tex_drawn(it->tex);
                 undo_push(); a.width = d.fw; a.height = d.fh; set_area_from_field(sel, a);
             }
-        } else {
+        } else if (!wid) {
             if (GuiButton((Rectangle){x + 2 * bw + 8, y, bw, 24}, "Fit button")) {
                 int b = find_image_under(it->area);
                 if (b >= 0) { undo_push(); it->area = L.items[b].area; }
@@ -839,6 +929,26 @@ static void right_panel(Rectangle r) {
             y += 28;
             if (it->clickable) { tex_slot(fid + 10, x, y, w, "Hover", &it->hover_tex, false); y += 30; }
             else y += 30;
+        } else if (wid) {
+            // type / setting: < name >
+            int *vals[2] = {&it->wtype, &it->setting};
+            int counts[2] = {P.widget_type_count, P.setting_count};
+            const char *titles[2] = {"Type", "Setting"};
+            for (int f = 0; f < 2; f++) {
+                text(titles[f], x, y + 4, DARKGRAY);
+                float lw = 60;
+                const char *nm = counts[f] ? (f == 0 ? P.widget_types[*vals[f]] : P.settings[*vals[f]]) : "?";
+                DrawRectangle((int)(x + lw + 28), (int)y, (int)(w - lw - 56), 24, (Color){245, 245, 245, 255});
+                text(fit(nm, w - lw - 64), x + lw + 32, y + 4, BLACK);
+                if (GuiButton((Rectangle){x + lw, y, 24, 24}, "<") && counts[f]) { undo_push(); *vals[f] = (*vals[f] + counts[f] - 1) % counts[f]; }
+                if (GuiButton((Rectangle){x + w - 24, y, 24, 24}, ">") && counts[f]) { undo_push(); *vals[f] = (*vals[f] + 1) % counts[f]; }
+                y += 28;
+            }
+            text("Option", x, y + 4, DARKGRAY);
+            if (field_text(fid + 20, (Rectangle){x + 60, y, w - 60, 24}, it->option, NAME_LEN)) dirty = true;
+            y += 22;
+            text("(radios only: the value it picks, e.g. LANG_EU)", x, y + 4, GRAY);
+            y += 30;
         } else {
             text("Text", x, y + 4, DARKGRAY);
             float lw = 74;
@@ -849,6 +959,15 @@ static void right_panel(Rectangle r) {
                 else set_status(true, "Select a text in the Texts tab first");
             }
             y += 30;
+            {
+                text("Style", x, y + 4, DARKGRAY);
+                float lw = 60;
+                DrawRectangle((int)(x + lw + 28), (int)y, (int)(w - lw - 56), 24, (Color){245, 245, 245, 255});
+                text(fit(P.styles[it->style].name, w - lw - 64), x + lw + 32, y + 4, BLACK);
+                if (GuiButton((Rectangle){x + lw, y, 24, 24}, "<")) { undo_push(); it->style = (it->style + P.style_count - 1) % P.style_count; }
+                if (GuiButton((Rectangle){x + w - 24, y, 24, 24}, ">")) { undo_push(); it->style = (it->style + 1) % P.style_count; }
+                y += 30;
+            }
             if (it->text >= 0) {
                 for (int l = 0; l < P.lang_count; l++) {
                     const char *ln = strncmp(P.langs[l], "LANG_", 5) == 0 ? P.langs[l] + 5 : P.langs[l];
@@ -897,12 +1016,14 @@ static void right_panel(Rectangle r) {
         if (i == sel) DrawRectangleRec(row, (Color){180, 210, 255, 255});
         else if (hot) DrawRectangleRec(row, (Color){230, 238, 250, 255});
         int k = layout_index_of_kind(&L, i);
-        const char *nm = it->kind == ITEM_IMAGE ? P.tex[it->tex].name : (it->text >= 0 ? P.texts[it->text].name : "(no text)");
+        const char *nm = it->kind == ITEM_IMAGE ? P.tex[it->tex].name :
+                         it->kind == ITEM_WIDGET ? (P.setting_count ? P.settings[it->setting] : "?") :
+                         (it->text >= 0 ? P.texts[it->text].name : "(no text)");
         if (strncmp(nm, "TEX_", 4) == 0 || strncmp(nm, "TXT_", 4) == 0) nm += 4;
         char line[PATH_LEN];
-        snprintf(line, sizeof(line), "%s%d %s%s%s", it->kind == ITEM_IMAGE ? "E" : "T", k,
+        snprintf(line, sizeof(line), "%s%d %s%s%s", it->kind == ITEM_IMAGE ? "E" : it->kind == ITEM_WIDGET ? "W" : "T", k,
                  it->locked ? "[lock] " : "", it->kind == ITEM_IMAGE && it->clickable ? "[click] " : "", nm);
-        text(fit(line, row.width - 10), row.x + 5, row.y + 3, it->kind == ITEM_IMAGE ? BLACK : (Color){120, 30, 140, 255});
+        text(fit(line, row.width - 10), row.x + 5, row.y + 3, it->kind == ITEM_IMAGE ? BLACK : it->kind == ITEM_WIDGET ? (Color){20, 110, 160, 255} : (Color){120, 30, 140, 255});
         if (hot && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { sel = i; active_field = 0; }
     }
     EndScissorMode();
@@ -928,7 +1049,10 @@ static void canvas_draw(Vector2 mc, bool mouse_in_view) {
     for (int i = 0; i < L.count; i++) {
         const Item *it = &L.items[i];
         if (it->kind != ITEM_TEXT) continue;
-        draw_label(label_str(it), label_rect(it));
+        draw_label(label_str(it), label_rect(it), it->style);
+    }
+    for (int i = 0; i < L.count; i++) {
+        if (L.items[i].kind == ITEM_WIDGET) draw_widget(&L.items[i]);
     }
 
     // canvas edge + center lines
@@ -1260,7 +1384,7 @@ static void modal_open(void) {
     if (have_screen && GuiButton((Rectangle){x + w - 120, y, 120, 30}, "Cancel")) modal = MODAL_NONE;
     y += 42;
 
-    text(TextFormat("%d textures declared, %d assets, canvas %gx%g, labels %gpx high", P.tex_count, asset_count, P.canvas_w, P.canvas_h, P.text_h), x, y, GRAY);
+    text(TextFormat("%d textures declared, %d assets, canvas %gx%g, %d text styles", P.tex_count, asset_count, P.canvas_w, P.canvas_h, P.style_count), x, y, GRAY);
     y += 24;
     if (P.warn_count) {
         text(TextFormat("%d warnings while reading the game:", P.warn_count), x, y, RED);
@@ -1430,9 +1554,10 @@ static void dump_state(int frame) {
            frame, have_screen ? cur.name : "-", dirty, sel, browser_tab, modal, zoom, pan.x, pan.y, L.count);
     for (int i = 0; i < L.count; i++) {
         const Item *it = &L.items[i];
-        printf("   %c%d {%g,%g,%g,%g}", it->kind == ITEM_IMAGE ? 'E' : 'T', layout_index_of_kind(&L, i),
+        printf("   %c%d {%g,%g,%g,%g}", it->kind == ITEM_IMAGE ? 'E' : it->kind == ITEM_WIDGET ? 'W' : 'T', layout_index_of_kind(&L, i),
                it->area.x, it->area.y, it->area.width, it->area.height);
         if (it->kind == ITEM_IMAGE) printf(" %s%s%s\n", P.tex[it->tex].name, it->clickable ? " click->" : "", it->clickable ? P.tex[it->hover_tex].name : "");
+        else if (it->kind == ITEM_WIDGET) printf(" %s %s %s\n", P.widget_types[it->wtype], P.setting_count ? P.settings[it->setting] : "-", it->option);
         else printf(" %s \"%s\"\n", it->text >= 0 ? P.texts[it->text].name : "-", text_str(&P, it->text, lang));
     }
     fflush(stdout);
@@ -1476,7 +1601,7 @@ static void script_step(int frame) {
 
 static bool is_root(const char *dir) {
     char p[PATH_LEN * 2];
-    snprintf(p, sizeof(p), "%s/include/texture.h", dir);
+    snprintf(p, sizeof(p), "%s/include/defines.h", dir);   // the one header that stays at the top
     return FileExists(p);
 }
 
@@ -1496,7 +1621,7 @@ int main(int argc, char **argv) {
     }
     if (!root || !is_root(root)) {
         fprintf(stderr, "usage: ui_editor [path/to/RPG] [--list | --build SCREEN | --selftest]\n"
-                        "couldn't find include/texture.h in %s\n", root ? root : "., ../.. or next to the binary");
+                        "couldn't find include/defines.h in %s\n", root ? root : "., ../.. or next to the binary");
         return 1;
     }
 
@@ -1578,8 +1703,8 @@ int main(int argc, char **argv) {
         if (drag == DRAG_BROWSER) {
             int b = browser_sel[browser_tab];
             if (b >= 0) {
-                const char *nm = browser_tab == 0 ? P.tex[b].name : browser_tab == 1 ? GetFileName(assets[b].path) : P.texts[b].name;
-                const char *what = browser_tab == 2 ? "label" : "image";
+                const char *nm = browser_tab == 0 ? P.tex[b].name : browser_tab == 1 ? GetFileName(assets[b].path) : browser_tab == 2 ? P.texts[b].name : P.widget_types[b];
+                const char *what = browser_tab == 2 ? "label" : browser_tab == 3 ? "widget" : "image";
                 text(TextFormat("+ %s (%s)", nm, what), m.x + 14, m.y + 10, in_view ? YELLOW : GRAY);
             }
         }

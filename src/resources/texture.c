@@ -26,6 +26,32 @@ static const TextureDef texture_defs[TEX_COUNT] = {
     [TEX_MAINMENU_LOGO]   = {"assets/Menus/MainMenu/sheets/logo.png", 1443, 935, 0, 0, true},
     [TEX_MAINMENU_NBUTTON] = {"assets/Menus/MainMenu/sheets/boton_normal.png", 1340, 258, 0, 0, true},
     [TEX_MAINMENU_HBUTTON] = {"assets/Menus/MainMenu/sheets/boton_hover.png", 1244, 242, 0, 0, true},
+
+    //Pixel art drawn at 2x, so no smoothing
+    [TEX_SETTINGS_PANEL]              = {"assets/Menus/Settings/panel.png", 686, 342, 0, 0, false},
+    [TEX_SETTINGS_TITLE]              = {"assets/Menus/Settings/title_ornate.png", 380, 48, 0, 0, false},
+    [TEX_SETTINGS_TAB_NORMAL]         = {"assets/Menus/Settings/tab_normal.png", 152, 32, 0, 0, false},
+    [TEX_SETTINGS_TAB_HOVER]          = {"assets/Menus/Settings/tab_hover.png", 152, 32, 0, 0, false},
+    [TEX_SETTINGS_ACTION_NORMAL]      = {"assets/Menus/Settings/action_normal.png", 194, 35, 0, 0, false},
+    [TEX_SETTINGS_ACTION_HOVER]       = {"assets/Menus/Settings/action_hover.png", 194, 35, 0, 0, false},
+    [TEX_SETTINGS_SEPARATOR]          = {"assets/Menus/Settings/separator.png", 434, 5, 0, 0, false},
+    [TEX_SETTINGS_SEPARATOR_VERTICAL] = {"assets/Menus/Settings/separator_vertical.png", 5, 224, 0, 0, false},
+    [TEX_SETTINGS_DROPDOWN_NORMAL]    = {"assets/Menus/Settings/dropdown_normal.png", 192, 27, 0, 0, false},
+    [TEX_SETTINGS_DROPDOWN_HOVER]     = {"assets/Menus/Settings/dropdown_hover.png", 192, 27, 0, 0, false},
+    [TEX_SETTINGS_DROPDOWN_LIST]      = {"assets/Menus/Settings/dropdown_list.png", 192, 80, 0, 0, false},
+    [TEX_SETTINGS_OPTION_NORMAL]      = {"assets/Menus/Settings/option_normal.png", 186, 24, 0, 0, false},
+    [TEX_SETTINGS_OPTION_HOVER]       = {"assets/Menus/Settings/option_hover.png", 186, 24, 0, 0, false},
+    [TEX_SETTINGS_KEYCAP_NORMAL]      = {"assets/Menus/Settings/keycap_normal.png", 65, 24, 0, 0, false},
+    [TEX_SETTINGS_KEYCAP_HOVER]       = {"assets/Menus/Settings/keycap_hover.png", 65, 24, 0, 0, false},
+    [TEX_SETTINGS_SLIDER_TRACK]       = {"assets/Menus/Settings/slider_track.png", 204, 9, 0, 0, false},
+    [TEX_SETTINGS_SLIDER_FILL]        = {"assets/Menus/Settings/slider_fill.png", 198, 3, 0, 0, false},
+    [TEX_SETTINGS_SLIDER_THUMB]       = {"assets/Menus/Settings/slider_thumb.png", 15, 17, 0, 0, false},
+    [TEX_SETTINGS_CHECKBOX_OFF]       = {"assets/Menus/Settings/checkbox_off.png", 20, 20, 0, 0, false},
+    [TEX_SETTINGS_CHECKBOX_ON]        = {"assets/Menus/Settings/checkbox_on.png", 20, 20, 0, 0, false},
+    [TEX_SETTINGS_RADIO_OFF]          = {"assets/Menus/Settings/radio_off.png", 17, 17, 0, 0, false},
+    [TEX_SETTINGS_RADIO_ON]           = {"assets/Menus/Settings/radio_on.png", 17, 17, 0, 0, false},
+    [TEX_SETTINGS_ARROW_DOWN]         = {"assets/Menus/Settings/arrow_down.png", 11, 11, 0, 0, false},
+    [TEX_SETTINGS_ARROW_UP]           = {"assets/Menus/Settings/arrow_up.png", 11, 11, 0, 0, false},
 };
 
 static TextureAsset textures[TEX_COUNT];

@@ -104,6 +104,7 @@ void export_blocks(const Project *p, const Screen *s, const Layout *l,
     Buf tb = {0}, rb = {0}, wb = {0};
     const char *elem_name = (s && s->elem_table[0]) ? s->elem_table : "UIElements";
     const char *text_name = (s && s->text_table[0]) ? s->text_table : "UITexts";
+    const char *widget_name = (s && s->widget_table[0]) ? s->widget_table : "UIWidgets";
 
     // ── block 1: textures ──
     int new_ids[MAX_TEX], nn = 0;
@@ -115,9 +116,9 @@ void export_blocks(const Project *p, const Screen *s, const Layout *l,
     } else {
         int w = 0;
         for (int k = 0; k < nn; k++) { int len = (int)strlen(p->tex[new_ids[k]].name); if (len > w) w = len; }
-        bprintf(&tb, "// include/texture.h : add inside enum TextureId, before TEX_COUNT\n");
+        bprintf(&tb, "// texture.h : add inside enum TextureId, before TEX_COUNT\n");
         for (int k = 0; k < nn; k++) bprintf(&tb, "    %s,\n", p->tex[new_ids[k]].name);
-        bprintf(&tb, "\n// src/texture.c : add inside texture_defs[]\n");
+        bprintf(&tb, "\n// texture.c : add inside texture_defs[]\n");
         for (int k = 0; k < nn; k++) {
             const TexEntry *t = &p->tex[new_ids[k]];
             char key[NAME_LEN + 4];
@@ -135,13 +136,22 @@ void export_blocks(const Project *p, const Screen *s, const Layout *l,
     static RectText rt[MAX_ITEMS];
     int widths[4];
 
-    int ne = 0, nt = 0, name_w = 0;
+    int ne = 0, nt = 0, nw = 0, name_w = 0, text_w = 0, wtype_w = 0;
     for (int i = 0; i < l->count; i++) {
-        if (l->items[i].kind == ITEM_IMAGE) {
+        const Item *it = &l->items[i];
+        if (it->kind == ITEM_IMAGE) {
             ne++;
-            int len = (int)strlen(p->tex[l->items[i].tex].name) + 1;
+            int len = (int)strlen(p->tex[it->tex].name) + 1;
             if (len > name_w) name_w = len;
-        } else nt++;
+        } else if (it->kind == ITEM_TEXT) {
+            nt++;
+            int len = it->text >= 0 ? (int)strlen(p->texts[it->text].name) + 1 : 2;
+            if (len > text_w) text_w = len;
+        } else {
+            nw++;
+            int len = (int)strlen(p->widget_types[it->wtype]) + 1;
+            if (len > wtype_w) wtype_w = len;
+        }
     }
 
     if (s && !s->is_draft) bprintf(&rb, "// Replaces the tables in %s() (%s)\n", s->name, s->source);
@@ -206,10 +216,10 @@ void export_blocks(const Project *p, const Screen *s, const Layout *l,
             if (it->kind != ITEM_TEXT) continue;
             bprintf(&rb, "        [%d] = {", idx);
             put_rect(&rb, &rt[i], widths);
-            if (it->text >= 0) {
-                bprintf(&rb, ", %s},\n", p->texts[it->text].name);
-            } else {
-                bprintf(&rb, ", 0},\n");
+            char tname[NAME_LEN + 2];
+            snprintf(tname, sizeof(tname), "%s,", it->text >= 0 ? p->texts[it->text].name : "0");
+            bprintf(&rb, ", %-*s %s},\n", text_w, tname, p->styles[it->style].name);
+            if (it->text < 0) {
                 bprintf(&wb, "! %s[%d] has no text (it will draw %s)\n", text_name, idx, p->text_count ? p->texts[0].name : "the first TextId");
             }
             idx++;
@@ -217,13 +227,33 @@ void export_blocks(const Project *p, const Screen *s, const Layout *l,
         bprintf(&rb, "    };\n");
     }
 
-    if (!ne && !nt) bprintf(&rb, "    // (empty canvas)\n");
+    if (nw) {
+        if (ne || nt) bprintf(&rb, "\n");
+        rect_cols(l, ITEM_WIDGET, rt, widths);
+        bprintf(&rb, "    static const CanvasWidget %s[] = {\n", widget_name);
+        int idx = 0;
+        for (int i = 0; i < l->count; i++) {
+            const Item *it = &l->items[i];
+            if (it->kind != ITEM_WIDGET) continue;
+            char wt[NAME_LEN + 2];
+            snprintf(wt, sizeof(wt), "%s,", p->widget_types[it->wtype]);
+            bprintf(&rb, "        [%d] = {%-*s ", idx, wtype_w, wt);
+            put_rect(&rb, &rt[i], widths);
+            bprintf(&rb, ", %s", p->setting_count ? p->settings[it->setting] : "0");
+            if (it->option[0]) bprintf(&rb, ", %s", it->option);
+            bprintf(&rb, "},\n");
+            idx++;
+        }
+        bprintf(&rb, "    };\n");
+    }
+
+    if (!ne && !nt && !nw) bprintf(&rb, "    // (empty canvas)\n");
 
     for (int i = 0; i < l->count; i++) {
         const Rectangle a = l->items[i].area;
         if (a.x + a.width <= 0 || a.y + a.height <= 0 || a.x >= p->canvas_w || a.y >= p->canvas_h)
             bprintf(&wb, "! %s[%d] is entirely outside the canvas\n",
-                    l->items[i].kind == ITEM_IMAGE ? elem_name : text_name, layout_index_of_kind(l, i));
+                    l->items[i].kind == ITEM_IMAGE ? elem_name : l->items[i].kind == ITEM_TEXT ? text_name : widget_name, layout_index_of_kind(l, i));
     }
 
     *textures_block = bdone(&tb);

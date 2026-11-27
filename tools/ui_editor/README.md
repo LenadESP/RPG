@@ -1,6 +1,6 @@
 # ui_editor
 
-Editor de los menús del juego (las tablas `CanvasElement` / `CanvasElementText`).
+Editor de los menús del juego (las tablas `CanvasElement` / `CanvasElementText` / `CanvasWidget`).
 Independiente del juego: **lee** `include/` y `src/`, **nunca los escribe**. Lo único
 que escribe es `tools/ui_editor/out/`.
 
@@ -17,10 +17,12 @@ make test     # sin ventana: lee cada pantalla, la exporta, relee el export y co
 |---|---|
 | `include/texture.h` | `enum TextureId` |
 | `src/texture.c` | `texture_defs[]`: ruta, frame, smooth |
-| `include/text.h` | `enum Language`, `enum TextId` |
-| `src/text.c` | `text_defs[]` (las frases), `font_path`, `font_characters` |
-| `include/defines.h` | `CANVAS_WIDTH`, `CANVAS_HEIGHT`, `MENU_TEXT_HEIGHT`, `TEXT_OUTLINE_WIDTH`, `FONT_LOAD_SIZE` |
-| `src/*.c` | cada función con tablas `CanvasElement`/`CanvasElementText` = una pantalla |
+| `include/text.h` | `enum Language`, `enum TextId`, `enum TextStyle` |
+| `src/text.c` | `text_defs[]` (las frases), `text_style_defs[]`, `font_path`, `font_characters` |
+| `include/colors.h` | los `COLOR_*` de los estilos |
+| `include/settings.h`, `include/canvas.h` | `enum SettingId`, `enum WidgetType` |
+| `include/defines.h` | `CANVAS_WIDTH`, `CANVAS_HEIGHT`, `TEXT_OUTLINE_WIDTH`, `TEXT_SHADOW_OFFSET`, `FONT_LOAD_SIZE` |
+| `src/*.c` | cada función con tablas `CanvasElement`/`CanvasElementText`/`CanvasWidget` = una pantalla |
 
 Si una tabla tiene algo que no entiende (una expresión tipo `1672.0f / 2`, un
 hueco en los índices...), avisa y no la carga, en vez de adivinar.
@@ -29,14 +31,16 @@ hueco en los índices...), avisa y no la carga, en vez de adivinar.
 
 - **Open...**: una pantalla del juego (`game_menu_draw`, `game_pause_draw`) o un borrador de `out/`.
   **New canvas...**: pantalla nueva (p. ej. `settings_menu`).
-- **Izquierda**: `Textures` = las `TEX_*` del juego; `assets/` = todos los PNG; `Texts` = los `TXT_*`.
+- **Izquierda**: `Textures` = las `TEX_*` del juego; `assets/` = todos los PNG; `Texts` = los `TXT_*`;
+  `Widgets` = los `WIDGET_*` (slider, checkbox...). Un widget nuevo sale con el primer ajuste: cámbialo a la derecha.
   Arrastra al lienzo (o doble clic). Texturas y PNG entran como imagen, textos como label.
   Un PNG de `assets/` se convierte en textura nueva (verde); nombre, frame y smooth editables.
   Los textos nuevos no se crean aquí: añádelos a `include/text.h` y `src/text.c` y dale a Reload.
 - **Label sobre un botón**: se encaja en su mismo rect (como en game.c). Mover el botón mueve sus labels.
   **Label sobre un label**: le cambia el texto. ES/EN/EU arriba cambia el idioma que se ve.
-- **Derecha**: propiedades (rect, clickable + hover, idiomas, lock) y el orden de dibujado
-  (`E` = UIElements, `T` = UITexts; los índices son los del export).
+- **Derecha**: propiedades (rect, clickable + hover, texto + estilo, tipo + ajuste del widget, lock) y el orden
+  de dibujado (`E` = UIElements, `T` = UITexts, `W` = UIWidgets; los índices son los del export).
+  Los widgets se ven aproximados (sin valores reales): lo que cuenta es el rect.
 - **Build** (Ctrl+B / Ctrl+S): dos bloques, cada uno con su botón de copiar:
   1. texturas nuevas: líneas para el enum de `texture.h` y para `texture_defs[]` de `texture.c`
   2. las tablas, con el formato de game.c y un comentario con los índices clicables

@@ -3,6 +3,7 @@
 #  make                 -> native linux debug build  (build/game)
 #  make run             -> build + launch it
 #  make win             -> 64-bit windows .exe       (build/game.exe)
+#                          + build/game.zip ready to hand in (exe, assets/, settings.conf)
 #  make RELEASE=1 win   -> optimised, no console window
 #  make clean           -> nuke build/
 #
@@ -25,13 +26,19 @@ RAYLIB_WIN := lib/raylib-win
 # something else (the command line, the environment) already set it"
 PREFIX ?= /usr/local
 
-SRCS    := $(wildcard $(SRC_DIR)/*.c)
+# every .c in src/ and its subfolders. the objects keep the same folders
+# inside build/ (src/ui/text.c -> build/linux/ui/text.o)
+SRCS    := $(shell find $(SRC_DIR) -name '*.c')
 OBJ_LIN := $(patsubst $(SRC_DIR)/%.c,$(BIN_DIR)/linux/%.o,$(SRCS))
 OBJ_WIN := $(patsubst $(SRC_DIR)/%.c,$(BIN_DIR)/win/%.o,$(SRCS))
 
+# include/ and every folder inside it, so #include "text.h" works
+# without writing the folder
+INC_DIRS := $(shell find $(INC_DIR) -type d)
+
 # -MMD -MP makes gcc emit .d files listing which headers each .o used,
 # so editing a header actually triggers a rebuild. see the -include below.
-CFLAGS := -std=c99 -Wall -Wextra -Wno-unused-parameter -I$(INC_DIR) -MMD -MP
+CFLAGS := -std=c99 -Wall -Wextra -Wno-unused-parameter $(addprefix -I,$(INC_DIRS)) -MMD -MP
 
 ifdef RELEASE
 	CFLAGS      += -O2 -DNDEBUG
@@ -68,19 +75,25 @@ all: $(BIN_DIR)/$(NAME)
 $(BIN_DIR)/$(NAME): $(OBJ_LIN)
 	$(CC_LIN) $^ -o $@ $(LIB_LIN)
 
-$(BIN_DIR)/linux/%.o: $(SRC_DIR)/%.c | $(BIN_DIR)/linux
+$(BIN_DIR)/linux/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(dir $@)
 	$(CC_LIN) $(CFLAGS) $(CF_LIN) -c $< -o $@
 
-win: $(BIN_DIR)/$(NAME).exe
+win: $(BIN_DIR)/$(NAME).zip
 
 $(BIN_DIR)/$(NAME).exe: $(OBJ_WIN)
 	$(CC_WIN) $^ -o $@ $(LIB_WIN) $(LDFLAGS_WIN)
 
-$(BIN_DIR)/win/%.o: $(SRC_DIR)/%.c | $(BIN_DIR)/win
-	$(CC_WIN) $(CFLAGS) $(CF_WIN) -c $< -o $@
+# the exe goes in without its build/ folder (-j), assets/ keeps its tree.
+# settings.conf is the one in the repo, with the default settings
+$(BIN_DIR)/$(NAME).zip: $(BIN_DIR)/$(NAME).exe settings.conf
+	rm -f $@
+	zip -q -j $@ $(BIN_DIR)/$(NAME).exe
+	zip -q -r $@ assets settings.conf
 
-$(BIN_DIR)/linux $(BIN_DIR)/win:
-	@mkdir -p $@
+$(BIN_DIR)/win/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC_WIN) $(CFLAGS) $(CF_WIN) -c $< -o $@
 
 run: all
 	./$(BIN_DIR)/$(NAME)

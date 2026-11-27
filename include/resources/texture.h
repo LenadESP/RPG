@@ -1,0 +1,62 @@
+#ifndef TEXTURE_H
+#define TEXTURE_H
+
+#include "raylib.h"
+#include <stdbool.h>
+
+typedef struct TextureAsset {
+    Texture2D texture;
+    int frame_w;
+    int frame_h;
+    int off_x;
+    int off_y;
+    int columns;
+    int rows;
+} TextureAsset;
+
+typedef enum {
+    TEX_NONE,
+    TEX_PLAYER,
+    TEX_TILESET_FLOOR,
+    TEX_TILESET_FLOOR_DETAIL,
+    TEX_TILESET_ELEMENT,
+    TEX_TILESET_NATURE,
+    TEX_TILESET_COLLISIONS,
+    TEX_MAINMENU_BG,
+    TEX_MAINMENU_LOGO,
+    TEX_MAINMENU_NBUTTON, //normal button
+    TEX_MAINMENU_HBUTTON, //hover button
+
+    TEX_SETTINGS_PANEL,
+    TEX_SETTINGS_TITLE,
+    TEX_SETTINGS_TAB_NORMAL,
+    TEX_SETTINGS_TAB_HOVER,
+    TEX_SETTINGS_ACTION_NORMAL,
+    TEX_SETTINGS_ACTION_HOVER,
+    TEX_SETTINGS_SEPARATOR,
+    TEX_SETTINGS_SEPARATOR_VERTICAL,
+    TEX_SETTINGS_DROPDOWN_NORMAL,
+    TEX_SETTINGS_DROPDOWN_HOVER,
+    TEX_SETTINGS_DROPDOWN_LIST,
+    TEX_SETTINGS_OPTION_NORMAL,
+    TEX_SETTINGS_OPTION_HOVER,
+    TEX_SETTINGS_KEYCAP_NORMAL,
+    TEX_SETTINGS_KEYCAP_HOVER,
+    TEX_SETTINGS_SLIDER_TRACK,
+    TEX_SETTINGS_SLIDER_FILL,
+    TEX_SETTINGS_SLIDER_THUMB,
+    TEX_SETTINGS_CHECKBOX_OFF,
+    TEX_SETTINGS_CHECKBOX_ON,
+    TEX_SETTINGS_RADIO_OFF,
+    TEX_SETTINGS_RADIO_ON,
+    TEX_SETTINGS_ARROW_DOWN,
+    TEX_SETTINGS_ARROW_UP,
+
+    TEX_COUNT
+} TextureId;
+
+void texture_load_all(void);
+void texture_unload_all(void);
+TextureAsset texture_get(TextureId id);
+
+#endif

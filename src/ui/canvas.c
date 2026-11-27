@@ -1,7 +1,9 @@
+#include "canvas.h"
 #include "raylib.h"
 #include "texture.h"
 #include "defines.h"
 #include <stdlib.h>
+#include <stdbool.h>
 
 Rectangle canvas_to_screen(Rectangle area, float scale, float offset_x, float offset_y)
 {
@@ -36,5 +38,38 @@ void draw_glitched(TextureId id, Rectangle area, float alpha, float amount,
         DrawTexturePro(asset.texture, src,
                        canvas_to_screen(dst, scale, offset_x, offset_y),
                        (Vector2){0, 0}, 0, Fade(WHITE, alpha));
+    }
+}
+
+void canvas_draw_texture(TextureId id, Rectangle area, float scale, float offset_x, float offset_y){
+    TextureAsset asset = texture_get(id);
+
+    DrawTexturePro(asset.texture,
+                   (Rectangle){0, 0, asset.frame_w, asset.frame_h},
+                   canvas_to_screen(area, scale, offset_x, offset_y),
+                   (Vector2){0, 0}, 0, WHITE);
+}
+
+//Returns the index of the hovered element, or -1 if there's none
+int canvas_draw_elements(const CanvasElement *elements, int count, Vector2 mouse_canvas, float scale, float offset_x, float offset_y){
+    int hovered_index = -1;
+
+    for (int i = 0; i < count; i++) {
+        bool hovered = elements[i].hover_effect && CheckCollisionPointRec(mouse_canvas, elements[i].area);
+
+        if (hovered) {
+            hovered_index = i;
+            canvas_draw_texture(elements[i].hover_texture, elements[i].area, scale, offset_x, offset_y);
+        } else {
+            canvas_draw_texture(elements[i].normal_texture, elements[i].area, scale, offset_x, offset_y);
+        }
+    }
+
+    return hovered_index;
+}
+
+void canvas_draw_texts(const CanvasElementText *texts, int count, float scale, float offset_x, float offset_y){
+    for (int i = 0; i < count; i++) {
+        text_draw(text_get(texts[i].text), texts[i].style, texts[i].area, scale, offset_x, offset_y);
     }
 }

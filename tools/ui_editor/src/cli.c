@@ -29,7 +29,9 @@ static bool same_item(const Item *a, const Item *b) {
         if (a->clickable && a->hover_tex != b->hover_tex) return false;
         return true;
     }
-    return a->text == b->text;
+    if (a->kind == ITEM_WIDGET)
+        return a->wtype == b->wtype && a->setting == b->setting && strcmp(a->option, b->option) == 0;
+    return a->text == b->text && a->style == b->style;
 }
 
 // Writes the export into a temp file shaped like a draft and reads it back.
@@ -72,7 +74,7 @@ int cli_run(const char *root, int argc, char **argv) {
     if (!project_load(&P, root)) return 1;
 
     if (strcmp(mode, "--list") == 0) {
-        printf("canvas %gx%g, label height %g, languages:", P.canvas_w, P.canvas_h, P.text_h);
+        printf("canvas %gx%g, %d text styles, %d settings, languages:", P.canvas_w, P.canvas_h, P.style_count, P.setting_count);
         for (int i = 0; i < P.lang_count; i++) printf(" %s", P.langs[i]);
         printf("\n\n%d textures:\n", P.tex_count);
         for (int i = 0; i < P.tex_count; i++) {
@@ -84,6 +86,7 @@ int cli_run(const char *root, int argc, char **argv) {
         for (int i = 0; i < P.screen_count; i++) {
             Screen *s = &P.screens[i];
             printf("  %-24s %-34s %s%s%s\n", s->name, s->source, s->elem_table, s->text_table[0] ? " + " : "", s->text_table);
+            if (s->widget_table[0]) printf("  %-24s %-34s + %s\n", "", "", s->widget_table);
         }
         return 0;
     }

@@ -7,8 +7,9 @@
 
 #include <stdbool.h>
 
-void game_menu_draw(void (*start_game)(void), void (*close_game)(void));
-void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *camera, const Map *map, void (*resume_game)(void), void (*exit_to_menu)(void));
+void game_menu_draw(void (*start_game)(void), void (*open_settings)(void), void (*close_game)(void));
+void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *camera, const Map *map, void (*resume_game)(void), void (*open_settings)(void), void (*exit_to_menu)(void));
+void game_settings_draw(const Entity *entities, int count, bool debug, Camera2D *camera, const Map *map, bool opened_from_pause, void (*close_settings)(void));
 void game_load_draw(void (*set_menu)(void));
 void game_draw(const Entity *entities, int count, bool debug, Camera2D *camera, const Map *map);
 

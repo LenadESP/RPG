@@ -6,7 +6,8 @@
 //   typedef enum { A, B, ..., X_COUNT } Name;
 //   [TEX_X] = { "path", fw, fh, ox, oy [, smooth] },
 //   static const CanvasElement     NAME[] = { [i] = {TEX, {x,y,w,h} [, bool, TEX]}, ... };
-//   static const CanvasElementText NAME[] = { [i] = {{x,y,w,h}, TXT_X}, ... };
+//   static const CanvasElementText NAME[] = { [i] = {{x,y,w,h}, TXT_X, TEXT_STYLE}, ... };
+//   static const CanvasWidget      NAME[] = { [i] = {WIDGET_X, {x,y,w,h}, SETTING_X [, OPTION]}, ... };
 //   [TXT_X] = { [LANG] = "string", ... },                     (src/text.c)
 //   static const char *font_path = "assets/...";              (src/text.c)
 //
@@ -393,10 +394,73 @@ static void parse_text_defs(Project *p, const Toks *ts) {
     }
 }
 
+// ─── text styles ─────────────────────────────────────────────
+
+int style_find(const Project *p, const char *name) {
+    for (int i = 0; i < p->style_count; i++) if (strcmp(p->styles[i].name, name) == 0) return i;
+    return -1;
+}
+int setting_find(const Project *p, const char *name) {
+    for (int i = 0; i < p->setting_count; i++) if (strcmp(p->settings[i], name) == 0) return i;
+    return -1;
+}
+int wtype_find(const Project *p, const char *name) {
+    for (int i = 0; i < p->widget_type_count; i++) if (strcmp(p->widget_types[i], name) == 0) return i;
+    return -1;
+}
+
+// #define COLOR_X {r, g, b, a}   from include/colors.h
+typedef struct { char name[NAME_LEN]; Color c; } NamedColor;
+static NamedColor colors[64];
+static int color_count;
+
+static void load_colors(const char *path) {
+    color_count = 0;
+    char *src = read_file(path);
+    if (!src) return;
+    for (char *line = strtok(src, "\n"); line && color_count < 64; line = strtok(NULL, "\n")) {
+        char name[NAME_LEN]; int r, g, b, a;
+        if (sscanf(line, " #define %95s {%d , %d , %d , %d}", name, &r, &g, &b, &a) == 5) {
+            snprintf(colors[color_count].name, NAME_LEN, "%s", name);
+            colors[color_count].c = (Color){(unsigned char)r, (unsigned char)g, (unsigned char)b, (unsigned char)a};
+            color_count++;
+        }
+    }
+    free(src);
+}
+
+static bool read_bool(const Toks *ts, int *i, bool *b);
+
+// [TEXT_X] = {size, centered, outline, COLOR_X}   anywhere in the file
+static void parse_style_defs(Project *p, const Toks *ts) {
+    for (int i = 0; i + 6 < ts->n; i++) {
+        int j = i;
+        if (!expect(ts, &j, '[') || ts->t[j].kind != T_IDENT) continue;
+        int idx = style_find(p, ts->t[j].text);
+        if (idx < 0) continue;
+        j++;
+        if (!expect(ts, &j, ']') || !expect(ts, &j, '=') || !expect(ts, &j, '{')) continue;
+        StyleEntry *st = &p->styles[idx];
+        float size; bool centered, outline;
+        if (!read_number(ts, &j, &size) || !expect(ts, &j, ',') || !read_bool(ts, &j, &centered) ||
+            !expect(ts, &j, ',') || !read_bool(ts, &j, &outline) || !expect(ts, &j, ',')) {
+            project_warn(p, "%s (line %d): couldn't read its style", st->name, ts->t[i].line);
+            continue;
+        }
+        st->size = size; st->centered = centered; st->outline = outline;
+        if (ts->t[j].kind == T_IDENT) {
+            bool found = false;
+            for (int c = 0; c < color_count; c++)
+                if (strcmp(colors[c].name, ts->t[j].text) == 0) { st->color = colors[c].c; found = true; }
+            if (!found) project_warn(p, "%s: color %s not found in colors.h", st->name, ts->t[j].text);
+        }
+    }
+}
+
 // ─── canvas tables ───────────────────────────────────────────
 
 typedef struct {
-    const char *type;    // "CanvasElement" / "CanvasElementText"
+    const char *type;    // "CanvasElement" / "CanvasElementText" / "CanvasWidget"
     char name[NAME_LEN];
     char func[NAME_LEN];
     int  start;          // index of the '{' that opens the initializer
@@ -428,7 +492,7 @@ static int find_tables(const Toks *ts, TableRef *out, int max) {
             if (depth == 0) func[0] = 0;
         }
 
-        if (t->kind == T_IDENT && (strcmp(t->text, "CanvasElement") == 0 || strcmp(t->text, "CanvasElementText") == 0)) {
+        if (t->kind == T_IDENT && (strcmp(t->text, "CanvasElement") == 0 || strcmp(t->text, "CanvasElementText") == 0 || strcmp(t->text, "CanvasWidget") == 0)) {
             int j = i + 1;
             if (ts->t[j].kind != T_IDENT) continue;
             const char *name = ts->t[j].text; j++;
@@ -437,7 +501,7 @@ static int find_tables(const Toks *ts, TableRef *out, int max) {
             if (!expect(ts, &j, ']') || !is_p(&ts->t[j], '=') || !is_p(&ts->t[j + 1], '{')) continue;
             if (count < max) {
                 TableRef *r = &out[count++];
-                r->type = strcmp(t->text, "CanvasElement") == 0 ? "CanvasElement" : "CanvasElementText";
+                r->type = strcmp(t->text, "CanvasElement") == 0 ? "CanvasElement" : strcmp(t->text, "CanvasWidget") == 0 ? "CanvasWidget" : "CanvasElementText";
                 snprintf(r->name, NAME_LEN, "%.*s", NAME_LEN - 1, name);
                 snprintf(r->func, NAME_LEN, "%s", func);
                 r->start = j + 2;   // first token after the '{'
@@ -507,6 +571,7 @@ static int lang_index(const Project *p, const Tok *t) {
 // Returns the item count, or -1 if it couldn't be read.
 static int read_table(Project *p, const Toks *ts, const TableRef *r, Item *items, int max) {
     bool is_text = strcmp(r->type, "CanvasElementText") == 0;
+    bool is_widget = strcmp(r->type, "CanvasWidget") == 0;
     bool used[MAX_ITEMS] = {0};
     int i = r->start, next = 0, highest = -1;
 
@@ -526,7 +591,26 @@ static int read_table(Project *p, const Toks *ts, const TableRef *r, Item *items
         it.tex = it.hover_tex = p->tex_none;
 
         if (!expect(ts, &i, '{')) goto fail;
-        if (!is_text) {
+        if (is_widget) {
+            it.kind = ITEM_WIDGET;
+            const Tok *wt = &ts->t[i];
+            if (wt->kind != T_IDENT || (it.wtype = wtype_find(p, wt->text)) < 0) {
+                project_warn(p, "%s isn't in enum WidgetType", wt->text); goto fail;
+            }
+            i++;
+            if (!expect(ts, &i, ',') || !read_rect(ts, &i, &it.area) || !expect(ts, &i, ',')) goto fail;
+            const Tok *st = &ts->t[i];
+            if (st->kind != T_IDENT || (it.setting = setting_find(p, st->text)) < 0) {
+                project_warn(p, "%s isn't in enum SettingId", st->text); goto fail;
+            }
+            i++;
+            if (is_p(&ts->t[i], ',') && !is_p(&ts->t[i + 1], '}')) {
+                i++;
+                if (ts->t[i].kind != T_IDENT && ts->t[i].kind != T_NUM) goto fail;
+                snprintf(it.option, NAME_LEN, "%.*s", NAME_LEN - 1, ts->t[i].text);
+                i++;
+            }
+        } else if (!is_text) {
             it.kind = ITEM_IMAGE;
             if (!read_tex(p, ts, &i, &it.tex) || !expect(ts, &i, ',') || !read_rect(ts, &i, &it.area)) goto fail;
             if (is_p(&ts->t[i], ',') && !is_p(&ts->t[i + 1], '}')) {
@@ -540,6 +624,13 @@ static int read_table(Project *p, const Toks *ts, const TableRef *r, Item *items
         } else {
             it.kind = ITEM_TEXT;
             if (!read_rect(ts, &i, &it.area) || !expect(ts, &i, ',') || !read_text(p, ts, &i, &it.text)) goto fail;
+            if (is_p(&ts->t[i], ',') && !is_p(&ts->t[i + 1], '}')) {
+                i++;
+                if (ts->t[i].kind != T_IDENT || (it.style = style_find(p, ts->t[i].text)) < 0) {
+                    project_warn(p, "%s isn't in enum TextStyle", ts->t[i].text); goto fail;
+                }
+                i++;
+            }
         }
         if (is_p(&ts->t[i], ',')) i++;
         if (!expect(ts, &i, '}')) goto fail;
@@ -588,8 +679,9 @@ static void scan_screens(Project *p, const char *path, const char *display, bool
         }
         Screen *sc = &p->screens[s];
         bool text = strcmp(refs[k].type, "CanvasElementText") == 0;
-        char *slot = text ? sc->text_table : sc->elem_table;
-        int  *line = text ? &sc->text_line : &sc->elem_line;
+        bool widget = strcmp(refs[k].type, "CanvasWidget") == 0;
+        char *slot = widget ? sc->widget_table : text ? sc->text_table : sc->elem_table;
+        int  *line = widget ? &sc->widget_line : text ? &sc->text_line : &sc->elem_line;
         if (slot[0]) {
             project_warn(p, "%s has more than one %s table; only %s is editable", name, refs[k].type, slot);
             continue;
@@ -600,6 +692,20 @@ static void scan_screens(Project *p, const char *path, const char *display, bool
     free(ts.t);
 }
 
+// The game keeps its files in subfolders (src/ui/text.c...). Finds one by name
+// anywhere under root/sub. Falls back to root/sub/name so the warning shows a path.
+static void game_file(const char *root, const char *sub, const char *name, char *out, int size) {
+    char dir[PATH_LEN * 2];
+    snprintf(dir, sizeof(dir), "%s/%s", root, sub);
+    snprintf(out, size, "%s/%s", dir, name);
+    if (!DirectoryExists(dir)) return;
+    FilePathList fl = LoadDirectoryFilesEx(dir, NULL, true);
+    for (unsigned i = 0; i < fl.count; i++) {
+        if (strcmp(GetFileName(fl.paths[i]), name) == 0) { snprintf(out, size, "%s", fl.paths[i]); break; }
+    }
+    UnloadDirectoryFiles(fl);
+}
+
 bool project_load(Project *p, const char *root) {
     memset(p, 0, sizeof(*p));
     define_count = 0;
@@ -607,22 +713,22 @@ bool project_load(Project *p, const char *root) {
     char path[PATH_LEN * 2];
 
     // defines.h
-    snprintf(path, sizeof(path), "%s/include/defines.h", root);
+    game_file(root, "include", "defines.h", path, sizeof(path));
     parse_defines(path);
-    p->canvas_w = 1672; p->canvas_h = 941; p->text_h = 48; p->text_outline = 3; p->font_bake_size = 120;
+    p->canvas_w = 1672; p->canvas_h = 941; p->text_outline = 3; p->text_shadow = 2; p->font_bake_size = 120;
     if (!define_get("CANVAS_WIDTH", &p->canvas_w))      project_warn(p, "CANVAS_WIDTH not found, using 1672");
     if (!define_get("CANVAS_HEIGHT", &p->canvas_h))     project_warn(p, "CANVAS_HEIGHT not found, using 941");
-    if (!define_get("MENU_TEXT_HEIGHT", &p->text_h))    project_warn(p, "MENU_TEXT_HEIGHT not found, using 48");
+    if (!define_get("TEXT_SHADOW_OFFSET", &p->text_shadow)) project_warn(p, "TEXT_SHADOW_OFFSET not found, using 2");
     if (!define_get("TEXT_OUTLINE_WIDTH", &p->text_outline))  project_warn(p, "TEXT_OUTLINE_WIDTH not found, using 3");
     if (!define_get("FONT_LOAD_SIZE", &p->font_bake_size)) project_warn(p, "FONT_LOAD_SIZE not found, using 120");
 
     Toks ts = {0};
 
     // text.h -> languages
-    snprintf(path, sizeof(path), "%s/include/text.h", root);
+    game_file(root, "include", "text.h", path, sizeof(path));
     if (tokenize(path, &ts)) p->lang_count = parse_enum(&ts, "Language", p->langs, MAX_LANGS);
     if (p->lang_count <= 0) {
-        project_warn(p, "enum Language not found in include/text.h");
+        project_warn(p, "enum Language not found in text.h");
         p->lang_count = 1;
         snprintf(p->langs[0], NAME_LEN, "0");
     }
@@ -630,21 +736,49 @@ bool project_load(Project *p, const char *root) {
     // text.h -> text ids, text.c -> their strings and the font
     static char text_names[MAX_TEXTS][NAME_LEN];
     int nt = parse_enum(&ts, "TextId", text_names, MAX_TEXTS);
-    if (nt < 0) { project_warn(p, "enum TextId not found in include/text.h"); nt = 0; }
+    if (nt < 0) { project_warn(p, "enum TextId not found in text.h"); nt = 0; }
     for (int i = 0; i < nt; i++) snprintf(p->texts[p->text_count++].name, NAME_LEN, "%.*s", NAME_LEN - 1, text_names[i]);
 
-    snprintf(path, sizeof(path), "%s/src/text.c", root);
+    static char style_names[MAX_STYLES][NAME_LEN];
+    int ns = parse_enum(&ts, "TextStyle", style_names, MAX_STYLES);
+    if (ns <= 0) { project_warn(p, "enum TextStyle not found in text.h"); ns = 0; }
+    for (int i = 0; i < ns; i++) {
+        StyleEntry *st = &p->styles[p->style_count++];
+        snprintf(st->name, NAME_LEN, "%.*s", NAME_LEN - 1, style_names[i]);
+        st->size = 32; st->centered = true; st->outline = false; st->color = (Color){251, 228, 168, 255};
+    }
+    if (p->style_count == 0) {   // something to point at, so items never index nothing
+        snprintf(p->styles[0].name, NAME_LEN, "TEXT_BUTTON");
+        p->styles[0].size = 48; p->styles[0].centered = true; p->styles[0].outline = true; p->styles[0].color = (Color){251, 228, 168, 255};
+        p->style_count = 1;
+    }
+
+    game_file(root, "include", "colors.h", path, sizeof(path));
+    load_colors(path);
+
+    game_file(root, "include", "settings.h", path, sizeof(path));
+    if (tokenize(path, &ts)) p->setting_count = parse_enum(&ts, "SettingId", p->settings, MAX_SETTINGS);
+    if (p->setting_count < 0) p->setting_count = 0;
+    if (!p->setting_count) project_warn(p, "enum SettingId not found in settings.h");
+
+    game_file(root, "include", "canvas.h", path, sizeof(path));
+    if (tokenize(path, &ts)) p->widget_type_count = parse_enum(&ts, "WidgetType", p->widget_types, MAX_WTYPES);
+    if (p->widget_type_count < 0) p->widget_type_count = 0;
+    if (!p->widget_type_count) project_warn(p, "enum WidgetType not found in canvas.h");
+
+    game_file(root, "src", "text.c", path, sizeof(path));
     if (tokenize(path, &ts)) {
         parse_text_defs(p, &ts);
-        if (!find_string_var(&ts, "font_path", p->font_path, PATH_LEN)) project_warn(p, "font_path not found in src/text.c");
+        parse_style_defs(p, &ts);
+        if (!find_string_var(&ts, "font_path", p->font_path, PATH_LEN)) project_warn(p, "font_path not found in text.c");
         find_string_var(&ts, "font_characters", p->font_charset, sizeof(p->font_charset));
     } else {
-        project_warn(p, "can't read src/text.c");
+        project_warn(p, "can't read text.c");
     }
 
     // texture.h -> ids
     static char names[MAX_TEX][NAME_LEN];
-    snprintf(path, sizeof(path), "%s/include/texture.h", root);
+    game_file(root, "include", "texture.h", path, sizeof(path));
     if (!tokenize(path, &ts)) {
         fprintf(stderr, "ui_editor: can't read %s. Is \"%s\" the RPG repo root?\n", path, root);
         free(ts.t);
@@ -658,9 +792,9 @@ bool project_load(Project *p, const char *root) {
     }
 
     // texture.c -> defs
-    snprintf(path, sizeof(path), "%s/src/texture.c", root);
+    game_file(root, "src", "texture.c", path, sizeof(path));
     if (tokenize(path, &ts)) parse_texture_defs(p, &ts, false);
-    else project_warn(p, "can't read src/texture.c");
+    else project_warn(p, "can't read texture.c");
 
     for (int i = 0; i < p->tex_count; i++) {
         if (p->tex[i].in_enum && !p->tex[i].has_def) project_warn(p, "%s is in the enum but has no texture_defs entry", p->tex[i].name);
@@ -679,10 +813,13 @@ bool project_load(Project *p, const char *root) {
 
     // game screens: every function in src/*.c that owns a table
     snprintf(path, sizeof(path), "%s/src", root);
-    FilePathList srcs = LoadDirectoryFilesEx(path, ".c", false);
+    FilePathList srcs = LoadDirectoryFilesEx(path, ".c", true);
+    size_t root_len = strlen(root);
     for (unsigned f = 0; f < srcs.count; f++) {
         char display[PATH_LEN];
-        snprintf(display, sizeof(display), "src/%s", GetFileName(srcs.paths[f]));
+        const char *rel = srcs.paths[f] + root_len;   // "/src/ui/text.c" -> "src/ui/text.c"
+        while (*rel == '/') rel++;
+        snprintf(display, sizeof(display), "%s", rel);
         scan_screens(p, srcs.paths[f], display, false, NULL);
     }
     UnloadDirectoryFiles(srcs);
@@ -710,8 +847,8 @@ bool layout_load(Project *p, int screen, Layout *out) {
 
     TableRef refs[64];
     int n = find_tables(&ts, refs, 64);
-    static Item elems[MAX_ITEMS], texts[MAX_ITEMS];
-    int ne = 0, nt = 0;
+    static Item elems[MAX_ITEMS], texts[MAX_ITEMS], widgets[MAX_ITEMS];
+    int ne = 0, nt = 0, nw = 0;
     bool ok = true;
     for (int k = 0; k < n; k++) {
         if (!s->is_draft && strcmp(refs[k].func, s->name) != 0) continue;
@@ -721,6 +858,9 @@ bool layout_load(Project *p, int screen, Layout *out) {
         } else if (strcmp(refs[k].type, "CanvasElementText") == 0 && strcmp(refs[k].name, s->text_table) == 0) {
             nt = read_table(p, &ts, &refs[k], texts, MAX_ITEMS);
             if (nt < 0) { ok = false; nt = 0; }
+        } else if (strcmp(refs[k].type, "CanvasWidget") == 0 && strcmp(refs[k].name, s->widget_table) == 0) {
+            nw = read_table(p, &ts, &refs[k], widgets, MAX_ITEMS);
+            if (nw < 0) { ok = false; nw = 0; }
         }
     }
     free(ts.t);
@@ -729,5 +869,6 @@ bool layout_load(Project *p, int screen, Layout *out) {
     // Images first, then labels: that's the order the game draws them in.
     for (int i = 0; i < ne && out->count < MAX_ITEMS; i++) out->items[out->count++] = elems[i];
     for (int i = 0; i < nt && out->count < MAX_ITEMS; i++) out->items[out->count++] = texts[i];
+    for (int i = 0; i < nw && out->count < MAX_ITEMS; i++) out->items[out->count++] = widgets[i];
     return true;
 }

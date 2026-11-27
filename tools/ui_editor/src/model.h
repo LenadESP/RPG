@@ -9,8 +9,10 @@
 //   src/texture.c       -> texture_defs[]           (path, frame size, smooth)
 //   include/text.h      -> enum Language, enum TextId
 //   src/text.c          -> text_defs[] (the strings), font_path, font_charset
-//   include/defines.h   -> CANVAS_WIDTH/HEIGHT, MENU_TEXT_HEIGHT, TEXT_OUTLINE, FONT_BAKE_SIZE
-//   src/*.c             -> CanvasElement / CanvasElementText tables, per function
+//   include/defines.h   -> CANVAS_WIDTH/HEIGHT, TEXT_OUTLINE_WIDTH, TEXT_SHADOW_OFFSET, FONT_LOAD_SIZE
+//   include/text.h + src/text.c + include/colors.h -> enum TextStyle, text_style_defs[]
+//   include/settings.h, include/canvas.h -> enum SettingId, enum WidgetType
+//   src/*.c             -> CanvasElement / CanvasElementText / CanvasWidget tables, per function
 // and writes only into tools/ui_editor/out/.
 
 #include "raylib.h"
@@ -25,6 +27,9 @@
 #define MAX_WARN     64
 #define MAX_TEXTS    512
 #define STR_LEN      256
+#define MAX_STYLES   32
+#define MAX_SETTINGS 128
+#define MAX_WTYPES   16
 
 typedef struct TexEntry {
     char name[NAME_LEN];   // TEX_MAINMENU_BG
@@ -45,7 +50,15 @@ typedef struct TextEntry {
     char str[MAX_LANGS][STR_LEN];
 } TextEntry;
 
-typedef enum { ITEM_IMAGE, ITEM_TEXT } ItemKind;
+// One TextStyle (TEXT_LABEL...) from text_style_defs[] in src/text.c
+typedef struct StyleEntry {
+    char  name[NAME_LEN];
+    float size;
+    bool  centered, outline;
+    Color color;
+} StyleEntry;
+
+typedef enum { ITEM_IMAGE, ITEM_TEXT, ITEM_WIDGET } ItemKind;
 
 typedef struct Item {
     ItemKind  kind;
@@ -56,6 +69,11 @@ typedef struct Item {
     int  hover_tex;
     // ITEM_TEXT   -> CanvasElementText
     int  text;             // texts index, -1 = not set
+    int  style;            // styles index
+    // ITEM_WIDGET -> CanvasWidget
+    int  wtype;            // widget_types index
+    int  setting;          // settings index
+    char option[NAME_LEN]; // 4th field, raw token ("" = none). Only radios use it
     // editor only, never exported
     bool locked;
 } Item;
@@ -66,12 +84,13 @@ typedef struct Screen {
     bool is_draft;                // came from out/, not from the game
     char elem_table[NAME_LEN];    // UIElements
     char text_table[NAME_LEN];    // UITexts
-    int  elem_line, text_line;    // where the tables are in the source (0 = none)
+    char widget_table[NAME_LEN];  // UIWidgets
+    int  elem_line, text_line, widget_line;    // where the tables are in the source (0 = none)
 } Screen;
 
 typedef struct Project {
     char root[PATH_LEN];          // repo root
-    float canvas_w, canvas_h, text_h, text_outline, font_bake_size;
+    float canvas_w, canvas_h, text_outline, text_shadow, font_bake_size;
 
     char langs[MAX_LANGS][NAME_LEN];
     int  lang_count;
@@ -80,6 +99,13 @@ typedef struct Project {
     int  text_count;
     char font_path[PATH_LEN];     // relative to the repo root, "" if not found
     char font_charset[STR_LEN * 4];
+
+    StyleEntry styles[MAX_STYLES];
+    int  style_count;
+    char settings[MAX_SETTINGS][NAME_LEN];   // enum SettingId
+    int  setting_count;
+    char widget_types[MAX_WTYPES][NAME_LEN]; // enum WidgetType
+    int  widget_type_count;
 
     TexEntry tex[MAX_TEX];
     int  tex_count;
@@ -103,6 +129,9 @@ bool project_load(Project *p, const char *root);               // false = fatal 
 bool layout_load(Project *p, int screen, Layout *out);          // tables of one screen
 int  tex_find(const Project *p, const char *name);              // -1 if missing
 int  text_find(const Project *p, const char *name);             // -1 if missing
+int  style_find(const Project *p, const char *name);            // -1 if missing
+int  setting_find(const Project *p, const char *name);
+int  wtype_find(const Project *p, const char *name);
 const char *text_str(const Project *p, int text, int lang);     // falls back to index 0, like text_get()
 int  tex_find_path(const Project *p, const char *path);
 int  tex_add_new(Project *p, const char *path, int w, int h);   // from an asset png

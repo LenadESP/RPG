@@ -34,7 +34,10 @@ edukia eta sistema grafikoak falta dira.
 | *Game loop* (*fixed timestep*) | Eginda |
 | *Input* sistema | Eginda |
 | Entitate-sistema | Eginda |
-| Pantaila-egoerak (menua / jokoa / pausa) | Eginda |
+| Pantaila-egoerak (menua / jokoa / pausa / ezarpenak) | Eginda |
+| Testuak hiru hizkuntzatan (ES / EN / EU) | Eginda |
+| Ezarpenen menua (`settings.conf`-en gordeta) | Eginda |
+| UI editorea (`tools/ui_editor`) | Eginda |
 | Leiho birdimentsionagarria eta pantaila osoa | Eginda |
 | Kolisioak (AABB) | Eginda |
 | Texturak | Eginda |
@@ -61,6 +64,10 @@ hasieran erreserbatzen da.
 dituzte; ez dago aldagai global ez *singleton*-ik. Modulu bakoitzak gauza bat egiten du:
 `input` teklatua irakurtzen du, `entity` entitateak mugitu eta marrazten ditu, `screen`
 marrazketaren ordena erabakitzen du.
+
+**Ezarpenak.** Menuak kopia bat editatzen du, eta *Aplikatu* sakatzean bakarrik pasatzen
+da jokora eta `settings.conf`-era (`gakoa: balioa`, lerro bakoitzeko bat). Fitxategirik
+ez badago, balio lehenetsiak erabiltzen dira.
 
 **Kolisioak.** AABB (*axis-aligned bounding box*) bidez, ardatz bakoitza bestearen
 ondoren ebatzita. Horri esker pertsonaia hormetan zehar irristatzen da, trabatu gabe.
@@ -109,7 +116,7 @@ lib/raylib-win/lib/libraylib.a
 |---|---|
 | `make` | Linuxerako *debug* bertsioa → `build/game` |
 | `make run` | Konpilatu eta exekutatu |
-| `make win` | Windows 64 bit-erako `.exe` → `build/game.exe` |
+| `make win` | Windows 64 bit-erako `.exe` → `build/game.exe`, eta zip-a → `build/game.zip` |
 | `make RELEASE=1 win` | Bertsio optimizatua, kontsola-leihorik gabe |
 | `make clean` | `build/` karpeta ezabatu |
 
@@ -121,7 +128,8 @@ make RELEASE=1 win
 
 Sortzen den `build/game.exe` fitxategi bakarra da eta estatikoki lotuta dago
 (*statically linked*): ez du DLLrik ez beste menpekotasunik behar. `assets/` karpeta
-exekutagarriaren ondoan egon behar da.
+eta `settings.conf` exekutagarriaren ondoan egon behar dira. `build/game.zip`-ek hiruak
+dakartza, entregatzeko prest.
 
 ---
 
@@ -131,8 +139,13 @@ exekutagarriaren ondoan egon behar da.
 .
 ├── Makefile
 ├── README.md
-├── src/              # iturburu-kodea (.c)
-├── include/          # goiburuak (.h)
+├── src/              # iturburu-kodea (.c): main.c eta game.c, gainerakoa karpetetan
+│   ├── world/        #   mapa, entitateak, jokalaria, kamera, talkak
+│   ├── ui/           #   canvas, testua, widget-ak
+│   ├── resources/    #   texturak, soinuak, bolumena
+│   └── settings/     #   ezarpenak, .conf fitxategia, teklak
+├── include/          # goiburuak (.h), src/-ren karpeta berdinekin
+├── settings.conf     # ezarpen lehenetsiak
 ├── assets/           # sprite-ak, tileset-ak, soinua
 ├── lib/raylib-win/   # raylib, Windows-erako cross-compilaziorako
 └── build/            # sortutako fitxategiak (ez dago bertsio-kontrolpean)
@@ -148,6 +161,9 @@ exekutagarriaren ondoan egon behar da.
 | `Enter` | Jokoa hasi |
 | `Esc` | Pausatu / jarraitu |
 | `F11` | Pantaila osoa |
+| `F3` | *Debug* modua (ezin da aldatu) |
+
+Teklak ezarpenen menuan alda daitezke (*Kontrolak*).
 
 ---
 
