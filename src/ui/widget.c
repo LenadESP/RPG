@@ -184,6 +184,10 @@ static void key_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool clic
     if (clicked && hovered) {
         play_sound(SOUND_UI_ACCEPT, 0.4f);
         waiting_key_setting = widget->setting;
+
+        //Throw away keys already pressed this frame so they don't count as the new one
+        while (GetKeyPressed() != 0) {
+        }
     }
 
     if (waiting_key_setting == (int)widget->setting) {

@@ -135,11 +135,16 @@ void text_draw(const char *text, TextStyle style, Rectangle area, CanvasTransfor
     }
 
     if(def.outline){
-        //Outline: the text 9 times around itself in the dark color, then the real one on top
+        //Outline: the text 8 times around itself in the dark color, then the real one on top
         float outline_width = TEXT_OUTLINE_WIDTH * transform.scale;
 
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
+                //The middle one would be covered by the real text anyway
+                if (dx == 0 && dy == 0) {
+                    continue;
+                }
+
                 Vector2 outline_position = {position.x + dx * outline_width, position.y + dy * outline_width};
                 DrawTextEx(font, text, outline_position, font_size, 0, dark_color);
             }
