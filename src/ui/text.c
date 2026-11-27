@@ -121,11 +121,11 @@ const char *text_get(TextId id){
     return text;
 }
 
-void text_draw(const char *text, TextStyle style, Rectangle area, float scale, float offset_x, float offset_y){
+void text_draw(const char *text, TextStyle style, Rectangle area, CanvasTransform transform){
     TextStyleDef def = text_style_defs[style];
-    float font_size = def.font_size * scale;
+    float font_size = def.font_size * transform.scale;
     Vector2 text_size = MeasureTextEx(font, text, font_size, 0);
-    Rectangle screen_area = canvas_to_screen(area, scale, offset_x, offset_y);
+    Rectangle screen_area = canvas_to_screen(area, transform);
 
     //Always centered vertically
     Vector2 position = {screen_area.x, screen_area.y + (screen_area.height - text_size.y) / 2.0f};
@@ -136,7 +136,7 @@ void text_draw(const char *text, TextStyle style, Rectangle area, float scale, f
 
     if(def.outline){
         //Outline: the text 9 times around itself in the dark color, then the real one on top
-        float outline_width = TEXT_OUTLINE_WIDTH * scale;
+        float outline_width = TEXT_OUTLINE_WIDTH * transform.scale;
 
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
@@ -145,7 +145,7 @@ void text_draw(const char *text, TextStyle style, Rectangle area, float scale, f
             }
         }
     } else {
-        float shadow_offset = TEXT_SHADOW_OFFSET * scale;
+        float shadow_offset = TEXT_SHADOW_OFFSET * transform.scale;
         Vector2 shadow_position = {position.x + shadow_offset, position.y + shadow_offset};
         DrawTextEx(font, text, shadow_position, font_size, 0, dark_color);
     }

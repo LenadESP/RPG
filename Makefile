@@ -3,7 +3,8 @@
 #  make                 -> native linux debug build  (build/game)
 #  make run             -> build + launch it
 #  make win             -> 64-bit windows .exe       (build/game.exe)
-#                          + build/game.zip ready to hand in (exe, assets/, settings.conf)
+#                          + build/game.zip ready to hand in (exe, the assets the code
+#                            uses, settings.conf, README, LICENSE)
 #  make RELEASE=1 win   -> optimised, no console window
 #  make clean           -> nuke build/
 #
@@ -84,12 +85,18 @@ win: $(BIN_DIR)/$(NAME).zip
 $(BIN_DIR)/$(NAME).exe: $(OBJ_WIN)
 	$(CC_WIN) $^ -o $@ $(LIB_WIN) $(LDFLAGS_WIN)
 
-# the exe goes in without its build/ folder (-j), assets/ keeps its tree.
+# every "assets/..." path written in the code: those are the files the game reads.
+# a path built at runtime (TextFormat...) wouldn't show up here: add it to EXTRA_ASSETS
+EXTRA_ASSETS :=
+USED_ASSETS  := $(shell grep -rhoE '"assets/[^"]+"' $(SRC_DIR) | tr -d '"' | sort -u) $(EXTRA_ASSETS)
+
+# the assets are prerequisites, so if one is missing make stops and says which.
+# the exe goes in without its build/ folder (-j), the assets keep their folders.
 # settings.conf is the one in the repo, with the default settings
-$(BIN_DIR)/$(NAME).zip: $(BIN_DIR)/$(NAME).exe settings.conf
+$(BIN_DIR)/$(NAME).zip: $(BIN_DIR)/$(NAME).exe settings.conf README.md LICENSE $(USED_ASSETS)
 	rm -f $@
 	zip -q -j $@ $(BIN_DIR)/$(NAME).exe
-	zip -q -r $@ assets settings.conf
+	zip -q $@ settings.conf README.md LICENSE $(USED_ASSETS)
 
 $(BIN_DIR)/win/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)

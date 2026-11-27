@@ -19,7 +19,7 @@ static int dragged_slider_setting = -1;
 static int open_dropdown_setting = -1;
 static int waiting_key_setting = -1;
 
-static void slider_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool clicked, float scale, float offset_x, float offset_y){
+static void slider_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool clicked, CanvasTransform transform){
     Rectangle area = widget->area;
     float inner_width = area.width - 2 * SLIDER_TRACK_BORDER;
 
@@ -46,14 +46,14 @@ static void slider_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool c
     Rectangle thumb_area = {fill_area.x + fill_width - SLIDER_THUMB_WIDTH / 2.0f, area.y + (area.height - SLIDER_THUMB_HEIGHT) / 2.0f, SLIDER_THUMB_WIDTH, SLIDER_THUMB_HEIGHT};
     Rectangle value_area = {area.x + area.width + 12.0f, area.y + area.height / 2.0f - 20.0f, 120.0f, 40.0f};
 
-    canvas_draw_texture(TEX_SETTINGS_SLIDER_TRACK, area, scale, offset_x, offset_y);
-    canvas_draw_texture(TEX_SETTINGS_SLIDER_FILL, fill_area, scale, offset_x, offset_y);
-    canvas_draw_texture(TEX_SETTINGS_SLIDER_THUMB, thumb_area, scale, offset_x, offset_y);
-    text_draw(TextFormat("%d%%", value), TEXT_VALUE, value_area, scale, offset_x, offset_y);
+    canvas_draw_texture(TEX_SETTINGS_SLIDER_TRACK, area, transform);
+    canvas_draw_texture(TEX_SETTINGS_SLIDER_FILL, fill_area, transform);
+    canvas_draw_texture(TEX_SETTINGS_SLIDER_THUMB, thumb_area, transform);
+    text_draw(TextFormat("%d%%", value), TEXT_VALUE, value_area, transform);
 }
 
 //The box is square on the left, the yes/no text goes after it
-static void checkbox_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool clicked, float scale, float offset_x, float offset_y){
+static void checkbox_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool clicked, CanvasTransform transform){
     Rectangle area = widget->area;
     bool checked = settings_get_pending(widget->setting);
 
@@ -67,16 +67,16 @@ static void checkbox_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool
     Rectangle text_area = {area.x + area.height + 14.0f, area.y, area.width - area.height - 14.0f, area.height};
 
     if (checked) {
-        canvas_draw_texture(TEX_SETTINGS_CHECKBOX_ON, box_area, scale, offset_x, offset_y);
-        text_draw(text_get(TXT_YES), TEXT_LABEL, text_area, scale, offset_x, offset_y);
+        canvas_draw_texture(TEX_SETTINGS_CHECKBOX_ON, box_area, transform);
+        text_draw(text_get(TXT_YES), TEXT_LABEL, text_area, transform);
     } else {
-        canvas_draw_texture(TEX_SETTINGS_CHECKBOX_OFF, box_area, scale, offset_x, offset_y);
-        text_draw(text_get(TXT_NO), TEXT_LABEL, text_area, scale, offset_x, offset_y);
+        canvas_draw_texture(TEX_SETTINGS_CHECKBOX_OFF, box_area, transform);
+        text_draw(text_get(TXT_NO), TEXT_LABEL, text_area, transform);
     }
 }
 
 //Only the closed part. The open list is drawn on top of everything, in dropdown_list_draw
-static void dropdown_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool clicked, float scale, float offset_x, float offset_y){
+static void dropdown_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool clicked, CanvasTransform transform){
     Rectangle area = widget->area;
     bool hovered = CheckCollisionPointRec(mouse_canvas, area);
 
@@ -92,18 +92,18 @@ static void dropdown_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool
     Rectangle arrow_area = {area.x + area.width - 36.0f, area.y + area.height / 2.0f - 10.0f, 22.0f, 22.0f};
 
     if (open || hovered) {
-        canvas_draw_texture(TEX_SETTINGS_DROPDOWN_HOVER, area, scale, offset_x, offset_y);
+        canvas_draw_texture(TEX_SETTINGS_DROPDOWN_HOVER, area, transform);
     } else {
-        canvas_draw_texture(TEX_SETTINGS_DROPDOWN_NORMAL, area, scale, offset_x, offset_y);
+        canvas_draw_texture(TEX_SETTINGS_DROPDOWN_NORMAL, area, transform);
     }
 
     if (open) {
-        canvas_draw_texture(TEX_SETTINGS_ARROW_UP, arrow_area, scale, offset_x, offset_y);
+        canvas_draw_texture(TEX_SETTINGS_ARROW_UP, arrow_area, transform);
     } else {
-        canvas_draw_texture(TEX_SETTINGS_ARROW_DOWN, arrow_area, scale, offset_x, offset_y);
+        canvas_draw_texture(TEX_SETTINGS_ARROW_DOWN, arrow_area, transform);
     }
 
-    text_draw(text_get(dropdown_options[widget->setting][value]), TEXT_VALUE, text_area, scale, offset_x, offset_y);
+    text_draw(text_get(dropdown_options[widget->setting][value]), TEXT_VALUE, text_area, transform);
 }
 
 static Rectangle dropdown_option_area(const CanvasWidget *widget, int option){
@@ -111,29 +111,29 @@ static Rectangle dropdown_option_area(const CanvasWidget *widget, int option){
     return (Rectangle){area.x + 6.0f, area.y + area.height + 8.0f + 48.0f * option, area.width - 12.0f, 48.0f};
 }
 
-static void dropdown_list_draw(const CanvasWidget *widget, Vector2 mouse_canvas, float scale, float offset_x, float offset_y){
+static void dropdown_list_draw(const CanvasWidget *widget, Vector2 mouse_canvas, CanvasTransform transform){
     Rectangle area = widget->area;
     Rectangle list_area = {area.x, area.y + area.height, area.width, 160.0f};
     int value = settings_get_pending(widget->setting);
 
-    canvas_draw_texture(TEX_SETTINGS_DROPDOWN_LIST, list_area, scale, offset_x, offset_y);
+    canvas_draw_texture(TEX_SETTINGS_DROPDOWN_LIST, list_area, transform);
 
     for (int option = 0; option < DROPDOWN_OPTION_COUNT; option++) {
         Rectangle option_area = dropdown_option_area(widget, option);
         Rectangle text_area = {option_area.x + 20.0f, option_area.y, option_area.width - 20.0f, option_area.height};
 
         if (option == value || CheckCollisionPointRec(mouse_canvas, option_area)) {
-            canvas_draw_texture(TEX_SETTINGS_OPTION_HOVER, option_area, scale, offset_x, offset_y);
+            canvas_draw_texture(TEX_SETTINGS_OPTION_HOVER, option_area, transform);
         } else {
-            canvas_draw_texture(TEX_SETTINGS_OPTION_NORMAL, option_area, scale, offset_x, offset_y);
+            canvas_draw_texture(TEX_SETTINGS_OPTION_NORMAL, option_area, transform);
         }
 
-        text_draw(text_get(dropdown_options[widget->setting][option]), TEXT_LABEL, text_area, scale, offset_x, offset_y);
+        text_draw(text_get(dropdown_options[widget->setting][option]), TEXT_LABEL, text_area, transform);
     }
 }
 
 //The whole row is clickable, the circle sits on the left
-static void radio_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool clicked, float scale, float offset_x, float offset_y){
+static void radio_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool clicked, CanvasTransform transform){
     Rectangle area = widget->area;
 
     if (clicked && CheckCollisionPointRec(mouse_canvas, area)) {
@@ -144,9 +144,9 @@ static void radio_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool cl
     Rectangle circle_area = {area.x + 4.0f, area.y + area.height / 2.0f - 17.0f, 34.0f, 34.0f};
 
     if (settings_get_pending(widget->setting) == widget->option) {
-        canvas_draw_texture(TEX_SETTINGS_RADIO_ON, circle_area, scale, offset_x, offset_y);
+        canvas_draw_texture(TEX_SETTINGS_RADIO_ON, circle_area, transform);
     } else {
-        canvas_draw_texture(TEX_SETTINGS_RADIO_OFF, circle_area, scale, offset_x, offset_y);
+        canvas_draw_texture(TEX_SETTINGS_RADIO_OFF, circle_area, transform);
     }
 }
 
@@ -177,7 +177,7 @@ static const char *key_name(int key){
     }
 }
 
-static void key_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool clicked, float scale, float offset_x, float offset_y){
+static void key_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool clicked, CanvasTransform transform){
     Rectangle area = widget->area;
     bool hovered = CheckCollisionPointRec(mouse_canvas, area);
 
@@ -187,15 +187,15 @@ static void key_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool clic
     }
 
     if (waiting_key_setting == (int)widget->setting) {
-        canvas_draw_texture(TEX_SETTINGS_KEYCAP_HOVER, area, scale, offset_x, offset_y);
-        text_draw("...", TEXT_VALUE, area, scale, offset_x, offset_y);
+        canvas_draw_texture(TEX_SETTINGS_KEYCAP_HOVER, area, transform);
+        text_draw("...", TEXT_VALUE, area, transform);
         return;
     }
 
     if (hovered) {
-        canvas_draw_texture(TEX_SETTINGS_KEYCAP_HOVER, area, scale, offset_x, offset_y);
+        canvas_draw_texture(TEX_SETTINGS_KEYCAP_HOVER, area, transform);
     } else {
-        canvas_draw_texture(TEX_SETTINGS_KEYCAP_NORMAL, area, scale, offset_x, offset_y);
+        canvas_draw_texture(TEX_SETTINGS_KEYCAP_NORMAL, area, transform);
     }
 
     //Red if another action has the same key
@@ -209,9 +209,9 @@ static void key_draw(const CanvasWidget *widget, Vector2 mouse_canvas, bool clic
     }
 
     if (repeated) {
-        text_draw(key_name(key), TEXT_CONFLICT, area, scale, offset_x, offset_y);
+        text_draw(key_name(key), TEXT_CONFLICT, area, transform);
     } else {
-        text_draw(key_name(key), TEXT_VALUE, area, scale, offset_x, offset_y);
+        text_draw(key_name(key), TEXT_VALUE, area, transform);
     }
 }
 
@@ -219,7 +219,7 @@ bool widget_waiting_for_key(void){
     return waiting_key_setting != -1;
 }
 
-void canvas_draw_widgets(const CanvasWidget *widgets, int count, Vector2 mouse_canvas, float scale, float offset_x, float offset_y){
+void canvas_draw_widgets(const CanvasWidget *widgets, int count, Vector2 mouse_canvas, CanvasTransform transform){
     bool clicked = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 
     if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
@@ -263,16 +263,16 @@ void canvas_draw_widgets(const CanvasWidget *widgets, int count, Vector2 mouse_c
 
     for (int i = 0; i < count; i++) {
         switch (widgets[i].type) {
-            case WIDGET_SLIDER:   slider_draw(&widgets[i], mouse_canvas, clicked, scale, offset_x, offset_y);   break;
-            case WIDGET_CHECKBOX: checkbox_draw(&widgets[i], mouse_canvas, clicked, scale, offset_x, offset_y); break;
-            case WIDGET_DROPDOWN: dropdown_draw(&widgets[i], mouse_canvas, clicked, scale, offset_x, offset_y); break;
-            case WIDGET_RADIO:    radio_draw(&widgets[i], mouse_canvas, clicked, scale, offset_x, offset_y);    break;
-            case WIDGET_KEY:      key_draw(&widgets[i], mouse_canvas, clicked, scale, offset_x, offset_y);      break;
+            case WIDGET_SLIDER:   slider_draw(&widgets[i], mouse_canvas, clicked, transform);   break;
+            case WIDGET_CHECKBOX: checkbox_draw(&widgets[i], mouse_canvas, clicked, transform); break;
+            case WIDGET_DROPDOWN: dropdown_draw(&widgets[i], mouse_canvas, clicked, transform); break;
+            case WIDGET_RADIO:    radio_draw(&widgets[i], mouse_canvas, clicked, transform);    break;
+            case WIDGET_KEY:      key_draw(&widgets[i], mouse_canvas, clicked, transform);      break;
         }
     }
 
     //Last, so the list covers whatever is under it
     if (open_dropdown != NULL && open_dropdown_setting == (int)open_dropdown->setting) {
-        dropdown_list_draw(open_dropdown, mouse_canvas, scale, offset_x, offset_y);
+        dropdown_list_draw(open_dropdown, mouse_canvas, transform);
     }
 }

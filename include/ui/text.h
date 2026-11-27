@@ -2,6 +2,7 @@
 #define TEXT_H
 
 #include "raylib.h"
+#include "transform.h"
 
 //If there's no translation, LANG_ES is the text
 typedef enum {
@@ -75,6 +76,6 @@ void font_load(void);
 void font_unload(void);
 void text_set_language(Language language);
 const char *text_get(TextId id);
-void text_draw(const char *text, TextStyle style, Rectangle area, float scale, float offset_x, float offset_y);
+void text_draw(const char *text, TextStyle style, Rectangle area, CanvasTransform transform);
 
 #endif

@@ -13,12 +13,8 @@
 #include <stdbool.h>
 
 void game_menu_draw(void (*start_game)(void), void (*open_settings)(void), void (*close_game)(void)){
-    float scale_x = (float)GetScreenWidth()  / CANVAS_WIDTH;
-    float scale_y = (float)GetScreenHeight() / CANVAS_HEIGHT;
-    float scale   = (scale_x < scale_y) ? scale_x : scale_y; //operador ternario, elige el menor.
-
-    float offset_x = (GetScreenWidth()  - CANVAS_WIDTH * scale) / 2.0f;
-    float offset_y = (GetScreenHeight() - CANVAS_HEIGHT * scale) / 2.0f;
+    CanvasTransform transform = canvas_get_transform();
+    Vector2 mouse_canvas = canvas_mouse(transform);
 
     static const CanvasElement UIElements[] = {
         [0] = {TEX_MAINMENU_BG,      {  0.0f,   0.0f, 1672.0f, 941.0f}},
@@ -34,38 +30,17 @@ void game_menu_draw(void (*start_game)(void), void (*open_settings)(void), void 
         [2] = {{576.0f, 780.0f, 520.0f, 100.0f}, TXT_EXIT, TEXT_BUTTON},
     };
 
-    // Mouse comes in screen space. Undo the transform so it speaks canvas and
-    // every rect in the tables can be used as written.
-    // Subtract the offset FIRST, then divide.
-    Vector2 mouse = GetMousePosition();
-    Vector2 mouse_canvas = {(mouse.x - offset_x) / scale, (mouse.y - offset_y) / scale};
+    int hovered_now = canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, transform);
+    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), transform);
 
     // Edge detection for the hover sound. Survives leaving and re-entering the menu
-    static int last_hovered = -1;
-    int hovered_now = -1;
-
-    for (int i = 0; i < (int)(sizeof(UIElements) / sizeof(UIElements[0])); i++) {
-        const CanvasElement *element = &UIElements[i];
-        bool hovered = element->hover_effect && CheckCollisionPointRec(mouse_canvas, element->area);
-        TextureAsset asset = texture_get(hovered ? element->hover_texture : element->normal_texture); //get either the normal or hovered texture
-
-        if (hovered) hovered_now = i;
-
-        DrawTexturePro(asset.texture,
-                       (Rectangle){0, 0, asset.frame_w, asset.frame_h},
-                       canvas_to_screen(element->area, scale, offset_x, offset_y),
-                       (Vector2){0, 0}, 0, WHITE);
-    }
-
     // Only on the leading edge: entering a different plaque than last frame
+    static int last_hovered = -1;
+
     if (hovered_now != last_hovered && hovered_now != -1) {
         play_sound(SOUND_UI_HOVER, 0.4f);
     }
     last_hovered = hovered_now;
-
-    for (int i = 0; i < (int)(sizeof(UITexts) / sizeof(UITexts[0])); i++) {
-        text_draw(text_get(UITexts[i].text), UITexts[i].style, UITexts[i].area, scale, offset_x, offset_y);
-    }
 
     // Plaques are UIElements 2, 3 and 4.
     // If you reorder that table, these indices lie and nothing warns you.
@@ -90,13 +65,8 @@ void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *ca
     //Tint over the whole window, outside BeginMode2D
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.6f));
 
-    //Canvas scaling
-    float scale_x = (float)GetScreenWidth()  / CANVAS_WIDTH;
-    float scale_y = (float)GetScreenHeight() / CANVAS_HEIGHT;
-    float scale   = (scale_x < scale_y) ? scale_x : scale_y;
-
-    float offset_x = (GetScreenWidth()  - CANVAS_WIDTH * scale) / 2.0f;
-    float offset_y = (GetScreenHeight() - CANVAS_HEIGHT * scale) / 2.0f;
+    CanvasTransform transform = canvas_get_transform();
+    Vector2 mouse_canvas = canvas_mouse(transform);
 
     //No logo here, so the plaques sit centered
     static const CanvasElement UIElements[] = {
@@ -111,35 +81,16 @@ void game_pause_draw(const Entity *entities, int count, bool debug, Camera2D *ca
         [2] = {{576.0f, 550.0f, 520.0f, 100.0f}, TXT_TO_MENU, TEXT_BUTTON},
     };
 
-    //Mouse to canvas space
-    Vector2 mouse = GetMousePosition();
-    Vector2 mouse_canvas = {(mouse.x - offset_x) / scale, (mouse.y - offset_y) / scale};
+    int hovered_now = canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, transform);
+    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), transform);
 
     //Its own edge state: this menu's indices are not the main menu's
     static int last_hovered = -1;
-    int hovered_now = -1;
-
-    for (int i = 0; i < (int)(sizeof(UIElements) / sizeof(UIElements[0])); i++) {
-        const CanvasElement *element = &UIElements[i];
-        bool hovered = element->hover_effect && CheckCollisionPointRec(mouse_canvas, element->area);
-        TextureAsset asset = texture_get(hovered ? element->hover_texture : element->normal_texture);
-
-        if (hovered) hovered_now = i;
-
-        DrawTexturePro(asset.texture,
-                       (Rectangle){0, 0, asset.frame_w, asset.frame_h},
-                       canvas_to_screen(element->area, scale, offset_x, offset_y),
-                       (Vector2){0, 0}, 0, WHITE);
-    }
 
     if (hovered_now != last_hovered && hovered_now != -1) {
         play_sound(SOUND_UI_HOVER, 0.4f);
     }
     last_hovered = hovered_now;
-
-    for (int i = 0; i < (int)(sizeof(UITexts) / sizeof(UITexts[0])); i++) {
-        text_draw(text_get(UITexts[i].text), UITexts[i].style, UITexts[i].area, scale, offset_x, offset_y);
-    }
 
     //Click handling. Careful: indices must match the table above
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -172,19 +123,14 @@ void game_load_draw(void (*set_menu)(void)){
 
     float amount = (1.0f - eased) * LOADING_MAX_OFFSET;
 
-    float scale_x = (float)GetScreenWidth()  / CANVAS_WIDTH;
-    float scale_y = (float)GetScreenHeight() / CANVAS_HEIGHT;
-    float scale   = (scale_x < scale_y) ? scale_x : scale_y;
-
-    float offset_x = (GetScreenWidth()  - CANVAS_WIDTH * scale) / 2.0f;
-    float offset_y = (GetScreenHeight() - CANVAS_HEIGHT * scale) / 2.0f;
+    CanvasTransform transform = canvas_get_transform();
 
     //Logo big and centered here. It snaps to its menu spot on the swap
     static const Rectangle bg_area   = {  0.0f,   0.0f, 1672.0f, 941.0f};
     static const Rectangle logo_area = {386.0f, 179.0f,  900.0f, 583.0f};
 
-    draw_glitched(TEX_MAINMENU_BG,   bg_area,   alpha, amount, scale, offset_x, offset_y);
-    draw_glitched(TEX_MAINMENU_LOGO, logo_area, alpha, amount, scale, offset_x, offset_y);
+    draw_glitched(TEX_MAINMENU_BG,   bg_area,   alpha, amount, transform);
+    draw_glitched(TEX_MAINMENU_LOGO, logo_area, alpha, amount, transform);
 
     if (elapsed >= LOADING_DURATION) {
         elapsed = 0.0f;
@@ -227,7 +173,7 @@ typedef enum {
 } SettingsTab;
 
 //One function per tab, so the editor can open each one as its own screen
-static void settings_general_draw(Vector2 mouse_canvas, float scale, float offset_x, float offset_y){
+static void settings_general_draw(Vector2 mouse_canvas, CanvasTransform transform){
     static const CanvasElement UIElements[] = {
         [0] = {TEX_SETTINGS_SEPARATOR, {564.0f, 422.0f, 868.0f, 10.0f}},
     };
@@ -243,12 +189,12 @@ static void settings_general_draw(Vector2 mouse_canvas, float scale, float offse
         [1] = {WIDGET_DROPDOWN, {1048.0f, 464.0f, 384.0f, 54.0f}, SETTING_TEXT_SPEED},
     };
 
-    canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, scale, offset_x, offset_y);
-    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), scale, offset_x, offset_y);
-    canvas_draw_widgets(UIWidgets, sizeof(UIWidgets) / sizeof(UIWidgets[0]), mouse_canvas, scale, offset_x, offset_y);
+    canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, transform);
+    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), transform);
+    canvas_draw_widgets(UIWidgets, sizeof(UIWidgets) / sizeof(UIWidgets[0]), mouse_canvas, transform);
 }
 
-static void settings_video_draw(Vector2 mouse_canvas, float scale, float offset_x, float offset_y){
+static void settings_video_draw(Vector2 mouse_canvas, CanvasTransform transform){
     static const CanvasElement UIElements[] = {
         [0] = {TEX_SETTINGS_SEPARATOR, {564.0f, 422.0f, 868.0f, 10.0f}},
     };
@@ -264,12 +210,12 @@ static void settings_video_draw(Vector2 mouse_canvas, float scale, float offset_
         [1] = {WIDGET_DROPDOWN, {1048.0f, 336.0f, 384.0f, 54.0f}, SETTING_DISPLAY_MODE},
     };
 
-    canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, scale, offset_x, offset_y);
-    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), scale, offset_x, offset_y);
-    canvas_draw_widgets(UIWidgets, sizeof(UIWidgets) / sizeof(UIWidgets[0]), mouse_canvas, scale, offset_x, offset_y);
+    canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, transform);
+    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), transform);
+    canvas_draw_widgets(UIWidgets, sizeof(UIWidgets) / sizeof(UIWidgets[0]), mouse_canvas, transform);
 }
 
-static void settings_audio_draw(Vector2 mouse_canvas, float scale, float offset_x, float offset_y){
+static void settings_audio_draw(Vector2 mouse_canvas, CanvasTransform transform){
     static const CanvasElement UIElements[] = {
         [0] = {TEX_SETTINGS_SEPARATOR, {564.0f, 374.0f, 868.0f, 10.0f}},
         [1] = {TEX_SETTINGS_SEPARATOR, {564.0f, 442.0f, 868.0f, 10.0f}},
@@ -297,12 +243,12 @@ static void settings_audio_draw(Vector2 mouse_canvas, float scale, float offset_
         [5] = {WIDGET_SLIDER, {892.0f, 674.0f, 408.0f, 18.0f}, SETTING_VOLUME_DIALOGUE},
     };
 
-    canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, scale, offset_x, offset_y);
-    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), scale, offset_x, offset_y);
-    canvas_draw_widgets(UIWidgets, sizeof(UIWidgets) / sizeof(UIWidgets[0]), mouse_canvas, scale, offset_x, offset_y);
+    canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, transform);
+    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), transform);
+    canvas_draw_widgets(UIWidgets, sizeof(UIWidgets) / sizeof(UIWidgets[0]), mouse_canvas, transform);
 }
 
-static void settings_controls_draw(Vector2 mouse_canvas, float scale, float offset_x, float offset_y){
+static void settings_controls_draw(Vector2 mouse_canvas, CanvasTransform transform){
     static const CanvasElement UIElements[] = {
         [0] = {TEX_SETTINGS_SEPARATOR, { 564.0f, 358.0f, 410.0f, 10.0f}},
         [1] = {TEX_SETTINGS_SEPARATOR, {1014.0f, 358.0f, 418.0f, 10.0f}},
@@ -338,17 +284,17 @@ static void settings_controls_draw(Vector2 mouse_canvas, float scale, float offs
         [6] = {WIDGET_KEY, {1294.0f, 512.0f, 130.0f, 48.0f}, SETTING_KEY_PAUSE_GAME},
     };
 
-    canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, scale, offset_x, offset_y);
-    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), scale, offset_x, offset_y);
-    canvas_draw_widgets(UIWidgets, sizeof(UIWidgets) / sizeof(UIWidgets[0]), mouse_canvas, scale, offset_x, offset_y);
+    canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, transform);
+    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), transform);
+    canvas_draw_widgets(UIWidgets, sizeof(UIWidgets) / sizeof(UIWidgets[0]), mouse_canvas, transform);
 
     if (widget_waiting_for_key()) {
         static const Rectangle hint_area = {564.0f, 688.0f, 868.0f, 40.0f};
-        text_draw(text_get(TXT_PRESS_A_KEY), TEXT_VALUE, hint_area, scale, offset_x, offset_y);
+        text_draw(text_get(TXT_PRESS_A_KEY), TEXT_VALUE, hint_area, transform);
     }
 }
 
-static void settings_language_draw(Vector2 mouse_canvas, float scale, float offset_x, float offset_y){
+static void settings_language_draw(Vector2 mouse_canvas, CanvasTransform transform){
     static const CanvasElement UIElements[] = {
         [0] = {TEX_SETTINGS_SEPARATOR, {564.0f, 388.0f, 868.0f, 10.0f}},
         [1] = {TEX_SETTINGS_SEPARATOR, {564.0f, 482.0f, 868.0f, 10.0f}},
@@ -368,29 +314,24 @@ static void settings_language_draw(Vector2 mouse_canvas, float scale, float offs
         [2] = {WIDGET_RADIO, {564.0f, 504.0f, 868.0f, 64.0f}, SETTING_LANGUAGE, LANG_EN},
     };
 
-    canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, scale, offset_x, offset_y);
-    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), scale, offset_x, offset_y);
-    canvas_draw_widgets(UIWidgets, sizeof(UIWidgets) / sizeof(UIWidgets[0]), mouse_canvas, scale, offset_x, offset_y);
+    canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, transform);
+    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), transform);
+    canvas_draw_widgets(UIWidgets, sizeof(UIWidgets) / sizeof(UIWidgets[0]), mouse_canvas, transform);
 }
 
 void game_settings_draw(const Entity *entities, int count, bool debug, Camera2D *camera, const Map *map,
                         bool opened_from_pause, void (*close_settings)(void)){
     static SettingsTab current_tab = TAB_GENERAL;
 
-    //Canvas scaling
-    float scale_x = (float)GetScreenWidth()  / CANVAS_WIDTH;
-    float scale_y = (float)GetScreenHeight() / CANVAS_HEIGHT;
-    float scale   = (scale_x < scale_y) ? scale_x : scale_y;
-
-    float offset_x = (GetScreenWidth()  - CANVAS_WIDTH * scale) / 2.0f;
-    float offset_y = (GetScreenHeight() - CANVAS_HEIGHT * scale) / 2.0f;
+    CanvasTransform transform = canvas_get_transform();
+    Vector2 mouse_canvas = canvas_mouse(transform);
 
     //Behind the panel: the paused game, or the main menu background
     if (opened_from_pause) {
         game_draw(entities, count, debug, camera, map);
     } else {
         static const Rectangle bg_area = {0.0f, 0.0f, 1672.0f, 941.0f};
-        canvas_draw_texture(TEX_MAINMENU_BG, bg_area, scale, offset_x, offset_y);
+        canvas_draw_texture(TEX_MAINMENU_BG, bg_area, transform);
     }
 
     //Tint over the whole window, same as the pause
@@ -432,23 +373,19 @@ void game_settings_draw(const Entity *entities, int count, bool debug, Camera2D 
     const int cancel_button = 12;
     const int reset_button = 13;
 
-    //Mouse to canvas space
-    Vector2 mouse = GetMousePosition();
-    Vector2 mouse_canvas = {(mouse.x - offset_x) / scale, (mouse.y - offset_y) / scale};
-
-    int hovered_now = canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, scale, offset_x, offset_y);
+    int hovered_now = canvas_draw_elements(UIElements, sizeof(UIElements) / sizeof(UIElements[0]), mouse_canvas, transform);
 
     //The open tab always looks hovered
-    canvas_draw_texture(TEX_SETTINGS_TAB_HOVER, UIElements[first_tab + current_tab].area, scale, offset_x, offset_y);
+    canvas_draw_texture(TEX_SETTINGS_TAB_HOVER, UIElements[first_tab + current_tab].area, transform);
 
-    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), scale, offset_x, offset_y);
+    canvas_draw_texts(UITexts, sizeof(UITexts) / sizeof(UITexts[0]), transform);
 
     switch (current_tab) {
-        case TAB_GENERAL:  settings_general_draw(mouse_canvas, scale, offset_x, offset_y);  break;
-        case TAB_VIDEO:    settings_video_draw(mouse_canvas, scale, offset_x, offset_y);    break;
-        case TAB_AUDIO:    settings_audio_draw(mouse_canvas, scale, offset_x, offset_y);    break;
-        case TAB_CONTROLS: settings_controls_draw(mouse_canvas, scale, offset_x, offset_y); break;
-        case TAB_LANGUAGE: settings_language_draw(mouse_canvas, scale, offset_x, offset_y); break;
+        case TAB_GENERAL:  settings_general_draw(mouse_canvas, transform);  break;
+        case TAB_VIDEO:    settings_video_draw(mouse_canvas, transform);    break;
+        case TAB_AUDIO:    settings_audio_draw(mouse_canvas, transform);    break;
+        case TAB_CONTROLS: settings_controls_draw(mouse_canvas, transform); break;
+        case TAB_LANGUAGE: settings_language_draw(mouse_canvas, transform); break;
         case TAB_COUNT:    break;
     }
 

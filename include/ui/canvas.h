@@ -4,6 +4,7 @@
 #include "texture.h"
 #include "text.h"
 #include "settings.h"
+#include "transform.h"
 #include "raylib.h"
 
 #include <stdbool.h>
@@ -37,13 +38,15 @@ typedef struct CanvasWidget {
     int option;
 } CanvasWidget;
 
-Rectangle canvas_to_screen(Rectangle area, float scale, float offset_x, float offset_y);
-void canvas_draw_texture(TextureId id, Rectangle area, float scale, float offset_x, float offset_y);
-int canvas_draw_elements(const CanvasElement *elements, int count, Vector2 mouse_canvas, float scale, float offset_x, float offset_y);
-void canvas_draw_texts(const CanvasElementText *texts, int count, float scale, float offset_x, float offset_y);
-void canvas_draw_widgets(const CanvasWidget *widgets, int count, Vector2 mouse_canvas, float scale, float offset_x, float offset_y);
+CanvasTransform canvas_get_transform(void);
+Vector2 canvas_mouse(CanvasTransform transform);
+Rectangle canvas_to_screen(Rectangle area, CanvasTransform transform);
+void canvas_draw_texture(TextureId id, Rectangle area, CanvasTransform transform);
+int canvas_draw_elements(const CanvasElement *elements, int count, Vector2 mouse_canvas, CanvasTransform transform);
+void canvas_draw_texts(const CanvasElementText *texts, int count, CanvasTransform transform);
+void canvas_draw_widgets(const CanvasWidget *widgets, int count, Vector2 mouse_canvas, CanvasTransform transform);
 bool widget_waiting_for_key(void);
-void draw_glitched (TextureId id, Rectangle area, float alpha, float amount, float scale, float offset_x, float offset_y);
+void draw_glitched (TextureId id, Rectangle area, float alpha, float amount, CanvasTransform transform);
 
 
 #endif

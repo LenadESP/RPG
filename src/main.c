@@ -105,6 +105,11 @@ int main(void) {
         input_poll_player(&player_input);
         input_poll_ui(&ui_input);
 
+        //While a key is being rebound, every key belongs to that
+        if (widget_waiting_for_key()) {
+            ui_input = (UIInput){0};
+        }
+
         //fullscreen handler
         if (ui_input.fullscreen){settings_toggle_fullscreen();}
 
@@ -122,8 +127,7 @@ int main(void) {
         } else if (ui_input.pause_game && game_state == GAME_PAUSED){
             set_playing();
 
-        //While a key is being rebound, Esc only cancels that
-        } else if (ui_input.pause_game && game_state == GAME_SETTINGS && !widget_waiting_for_key()){
+        } else if (ui_input.pause_game && game_state == GAME_SETTINGS){
             close_settings();
         }
 
